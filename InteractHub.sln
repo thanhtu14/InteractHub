@@ -1,0 +1,24 @@
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.5.2.0
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "InteractHub.API", "InteractHub.API\InteractHub.API.csproj", "{115A259A-968C-197E-9C09-CD68606D8DEA}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{115A259A-968C-197E-9C09-CD68606D8DEA}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{115A259A-968C-197E-9C09-CD68606D8DEA}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{115A259A-968C-197E-9C09-CD68606D8DEA}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{115A259A-968C-197E-9C09-CD68606D8DEA}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {F4280A9A-D3C8-4FC6-A73C-6E1D4EEAE6F4}
+	EndGlobalSection
+EndGlobal
