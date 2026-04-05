@@ -11,6 +11,7 @@
           "Microsoft.AspNetCore.Authentication.JwtBearer": "10.0.5",
           "Microsoft.AspNetCore.Identity.EntityFrameworkCore": "10.0.5",
           "Microsoft.AspNetCore.OpenApi": "10.0.2",
+          "Microsoft.EntityFrameworkCore": "10.0.5",
           "Microsoft.EntityFrameworkCore.SqlServer": "10.0.5",
           "Microsoft.EntityFrameworkCore.Tools": "10.0.5",
           "Swashbuckle.AspNetCore": "10.1.7"
