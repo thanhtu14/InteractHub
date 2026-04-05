@@ -4,18 +4,30 @@ import Login from "./pages/login.tsx";
 import HomePage from "./pages/HomePage.tsx";
 import FriendPage from "./pages/friendPage.tsx";
 import Profilepage from "./pages/ProfilePage.tsx";
+import ProtectedRoute from "./components/ProtectedRoute.tsx"
 function App() {
   return (
     <Router>
       <Routes>
-        <Route path="/" element={<Navigate to="/login" />} /> {/* Chuyển hướng về trang Login */}
+        <Route path="/" element={<Navigate to="/login" />} />
         <Route path="/login" element={<Login />} />
-        <Route path="/homepage" element={<HomePage />} /> 
-        <Route path="/friendpage" element={<FriendPage />} />
-        {/* Trang cá nhân chính mình */}
-        <Route path="/profilepage" element={<Profilepage />} />
-        {/* Trang cá nhân của người khác */}
-        <Route path="/profile/:id" element={<Profilepage />} />
+
+        {/* Các Route cần bảo vệ */}
+        <Route path="/homepage" element={
+          <ProtectedRoute><HomePage /></ProtectedRoute>
+        } /> 
+        
+        <Route path="/friendpage" element={
+          <ProtectedRoute><FriendPage /></ProtectedRoute>
+        } />
+
+        <Route path="/profilepage" element={
+          <ProtectedRoute><Profilepage /></ProtectedRoute>
+        } />
+
+        <Route path="/profile/:id" element={
+          <ProtectedRoute><Profilepage /></ProtectedRoute>
+        } />
       </Routes>
     </Router>
   );
