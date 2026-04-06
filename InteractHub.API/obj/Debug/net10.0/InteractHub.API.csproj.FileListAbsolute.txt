@@ -162,3 +162,4 @@ D:\Csharp\InteractHub\InteractHub.API\obj\Debug\net10.0\InteractHub.API.pdb
 D:\Csharp\InteractHub\InteractHub.API\obj\Debug\net10.0\InteractHub.API.genruntimeconfig.cache
 D:\Csharp\InteractHub\InteractHub.API\obj\Debug\net10.0\ref\InteractHub.API.dll
 D:\Csharp\InteractHub\InteractHub.API\obj\Debug\net10.0\InteractHub.API.sourcelink.json
+D:\CSharp\InteractHub\InteractHub.API\bin\Debug\net10.0\BCrypt.Net-Next.dll
