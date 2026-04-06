@@ -1,7 +1,11 @@
-import React, { createContext, useContext, useState, useEffect,type ReactNode } from "react";
+import React, {
+  createContext,
+  useState,
+  type ReactNode,
+} from "react";
 
-// 1. Định nghĩa kiểu dữ liệu User theo yêu cầu hệ thống
-interface User {
+// ── 1. Kiểu dữ liệu User ─────────────────────────────────────
+export interface User {
   id: string;
   username: string;
   email: string;
@@ -9,44 +13,45 @@ interface User {
   roles: string[];
 }
 
-// 2. Định nghĩa các giá trị mà Context sẽ cung cấp cho toàn App
-interface AuthContextType {
+// ── 2. Kiểu dữ liệu Context ──────────────────────────────────
+export interface AuthContextType {
   user: User | null;
   token: string | null;
   isAuthenticated: boolean;
-  isLoading: boolean;
-  login: (userData: User, token: string) => void;
+  login: (userData: User, newToken: string) => void;
   logout: () => void;
 }
 
+// ── 3. Helpers đọc localStorage ──────────────────────────────
+const getStoredToken = (): string | null => {
+  return localStorage.getItem("interact_hub_token");
+};
+
+const getStoredUser = (): User | null => {
+  try {
+    const raw = localStorage.getItem("interact_hub_user");
+    return raw ? JSON.parse(raw) : null;
+  } catch {
+    return null;
+  }
+};
+
+// ── 4. Tạo Context ───────────────────────────────────────────
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+// ── 5. Provider ──────────────────────────────────────────────
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
-  const [user, setUser] = useState<User | null>(null);
-  const [token, setToken] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  // Khởi tạo trực tiếp từ localStorage — không cần useEffect
+  const [token, setToken] = useState<string | null>(getStoredToken);
+  const [user, setUser]   = useState<User | null>(getStoredUser);
 
-  // 3. Tự động kiểm tra Token khi load lại trang (F2: Token Storage)
-  useEffect(() => {
-    const storedToken = localStorage.getItem("interact_hub_token");
-    const storedUser = localStorage.getItem("interact_hub_user");
-
-    if (storedToken && storedUser) {
-      setToken(storedToken);
-      setUser(JSON.parse(storedUser));
-    }
-    setIsLoading(false);
-  }, []);
-
-  // 4. Hàm xử lý khi đăng nhập thành công
-  const login = (userData: User, token: string) => {
-    setToken(token);
+  const login = (userData: User, newToken: string) => {
+    setToken(newToken);
     setUser(userData);
-    localStorage.setItem("interact_hub_token", token);
+    localStorage.setItem("interact_hub_token", newToken);
     localStorage.setItem("interact_hub_user", JSON.stringify(userData));
   };
 
-  // 5. Hàm xử lý đăng xuất
   const logout = () => {
     setToken(null);
     setUser(null);
@@ -55,24 +60,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   return (
-    <AuthContext.Provider value={{ 
-      user, 
-      token, 
-      isAuthenticated: !!token, 
-      isLoading, 
-      login, 
-      logout 
-    }}>
-      {!isLoading && children}
+    <AuthContext.Provider
+      value={{ user, token, isAuthenticated: !!token, login, logout }}
+    >
+      {children}
     </AuthContext.Provider>
   );
 };
 
-// Custom hook để sử dụng Auth nhanh hơn
-export const useAuth = () => {
-  const context = useContext(AuthContext);
-  if (context === undefined) {
-    throw new Error("useAuth must be used within an AuthProvider");
-  }
-  return context;
-};
+export default AuthContext;

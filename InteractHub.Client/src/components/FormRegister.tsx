@@ -110,11 +110,8 @@ const FormRegister: React.FC<FormRegisterProps> = ({
   };
 
   return (
-    <div className="bg-white/95 backdrop-blur-xl rounded-3xl shadow-2xl p-8 border border-white/50 max-w-md mx-auto">
+    <div className="bg-white/90 backdrop-blur-xl rounded-3xl shadow-2xl border border-white/50 max-w-md mx-auto">
       <div className="text-center mb-8">
-        <div className="text-6xl font-bold text-logocolor mb-2 tracking-tighter">
-          interacthub
-        </div>
         <h1 className="text-3xl font-semibold text-gray-900">Create account</h1>
         <p className="text-gray-500 mt-1">It's quick and easy.</p>
       </div>
@@ -231,7 +228,7 @@ const FormRegister: React.FC<FormRegisterProps> = ({
 
         <button
           type="button"
-          className="w-full flex items-center justify-center gap-3 py-4 px-5 bg-white
+          className="w-full flex items-center justify-center gap-3 py-4 px-5 bg-white/80
                      border border-gray-300 hover:border-gray-400 rounded-2xl font-medium
                      text-gray-700 transition-all hover:shadow-md active:scale-[0.98]"
         >
