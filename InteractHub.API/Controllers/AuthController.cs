@@ -142,7 +142,7 @@ public class AuthController : ControllerBase
                 UserName       = email, 
                 ProfilePicture = avatar,
                 // Password ngẫu nhiên vì login qua Social
-                Password       = BCrypt.Net.BCrypt.HashPassword(Guid.NewGuid().ToString()), 
+                PasswordHash       = BCrypt.Net.BCrypt.HashPassword(Guid.NewGuid().ToString()), 
                 Status         = 1,
             };
             _db.Users.Add(user);

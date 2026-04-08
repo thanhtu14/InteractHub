@@ -8,8 +8,8 @@ import ForgotPassword from "../components/ForgotPassword"; // Import component m
 import useAuth from "../context/useAuth";
 import { loginAPI, registerAPI } from "../services/authService";
 
-import type { LoginFormData } from "../components/FormLogin";
-import type { RegisterFormData } from "../components/FormRegister";
+import type { LoginFormData } from "../schemas/auth.schema";
+import type { RegisterFormData } from "../schemas/auth.schema";
 
 const LoginPage = () => {
   // Thay thế boolean bằng string để quản lý 3 màn hình

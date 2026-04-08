@@ -11,7 +11,7 @@ public class Comment
 
     public string? Content { get; set; }
 
-    public int UserId { get; set; }
+    public string? UserId { get; set; }  // int → string
 
     public int PostId { get; set; }
 
@@ -24,5 +24,4 @@ public class Comment
 
     [ForeignKey("PostId")]
     public Post? Post { get; set; }
-
 }

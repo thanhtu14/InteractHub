@@ -1,15 +1,14 @@
-using System;
+using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 using InteractHub.API.Entities;
 
 namespace InteractHub.API.Data;
 
-public class AppDbContext : DbContext
+public class AppDbContext : IdentityDbContext<User>  // DbContext → IdentityDbContext<User>
 {
     public AppDbContext(DbContextOptions<AppDbContext> options) : base(options) { }
 
-    // DbSet
-    public DbSet<User> Users { get; set; }
+    // DbSet — bỏ DbSet<User> vì Identity tự quản lý
     public DbSet<Post> Posts { get; set; }
     public DbSet<Story> Stories { get; set; }
     public DbSet<Like> Likes { get; set; }
@@ -22,14 +21,14 @@ public class AppDbContext : DbContext
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
-        base.OnModelCreating(modelBuilder);
+        base.OnModelCreating(modelBuilder); // Bắt buộc gọi để Identity tạo bảng
 
-        // --- 1. Friendship (Xử lý 2 khóa ngoại trỏ về cùng 1 bảng User) ---
+        // --- 1. Friendship ---
         modelBuilder.Entity<Friendship>()
             .HasOne(f => f.Requester)
             .WithMany(u => u.RequestedFriends)
             .HasForeignKey(f => f.RequesterId)
-            .OnDelete(DeleteBehavior.Restrict); // Dùng Restrict để tránh lỗi Multiple Paths
+            .OnDelete(DeleteBehavior.Restrict);
 
         modelBuilder.Entity<Friendship>()
             .HasOne(f => f.Receiver)
@@ -37,28 +36,28 @@ public class AppDbContext : DbContext
             .HasForeignKey(f => f.ReceiverId)
             .OnDelete(DeleteBehavior.Restrict);
 
-        // --- 2. Comment (Xử lý lỗi Multiple Cascade Paths giữa User và Post) ---
+        // --- 2. Comment ---
         modelBuilder.Entity<Comment>()
             .HasOne(c => c.User)
             .WithMany(u => u.Comments)
             .HasForeignKey(c => c.UserId)
-            .OnDelete(DeleteBehavior.Restrict); // Tắt cascade từ phía User
+            .OnDelete(DeleteBehavior.Restrict);
 
-        // --- 3. Like (Nếu bảng Like cũng trỏ về cả User và Post, cần tắt 1 đầu) ---
+        // --- 3. Like ---
         modelBuilder.Entity<Like>()
             .HasOne(l => l.User)
             .WithMany(u => u.Likes)
             .HasForeignKey(l => l.UserId)
             .OnDelete(DeleteBehavior.Restrict);
 
-        // --- 4. PostReport (Tương tự Comment và Like) ---
+        // --- 4. PostReport ---
         modelBuilder.Entity<PostReport>()
             .HasOne(pr => pr.User)
             .WithMany(u => u.PostReports)
             .HasForeignKey(pr => pr.UserId)
             .OnDelete(DeleteBehavior.Restrict);
 
-        // --- 5. Post_Hashtag (Quan hệ Nhiều - Nhiều) ---
+        // --- 5. Post_Hashtag ---
         modelBuilder.Entity<Post_Hashtag>()
             .HasKey(ch => new { ch.PostId, ch.HashtagId });
 

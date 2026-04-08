@@ -11,7 +11,7 @@ public class PostReport
 
     public int PostId { get; set; }
 
-    public int UserId { get; set; }
+    public string? UserId { get; set; }
 
     public string? Reason { get; set; }
 

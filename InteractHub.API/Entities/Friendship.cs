@@ -9,9 +9,9 @@ public class Friendship
     [Key]
     public int Id { get; set; }
 
-    public int RequesterId { get; set; } // người gửi
+    public string? RequesterId { get; set; } // người gửi
 
-    public int ReceiverId { get; set; } // người nhận
+    public string? ReceiverId { get; set; } // người nhận
 
     public DateTime? CreatedAt { get; set; }
 

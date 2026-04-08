@@ -13,7 +13,7 @@ public class Post
 
     public string? ImageUrl { get; set; }
 
-    public int UserId { get; set; } // FK
+    public string? UserId { get; set; } // FK
 
     public DateTime? CreatedAt { get; set; }
 

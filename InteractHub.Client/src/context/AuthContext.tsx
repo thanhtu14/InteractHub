@@ -9,7 +9,12 @@ export interface User {
   id: string;
   username: string;
   email: string;
+  fullName?: string;
   avatarUrl?: string;
+  bio?: string;
+  dateOfBirth?: string;
+  status: number;
+  createdAt: string;
   roles: string[];
 }
 
@@ -18,6 +23,7 @@ export interface AuthContextType {
   user: User | null;
   token: string | null;
   isAuthenticated: boolean;
+  isAdmin: boolean; // Thêm tiện check quyền Admin
   login: (userData: User, newToken: string) => void;
   logout: () => void;
 }
@@ -41,7 +47,6 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 // ── 5. Provider ──────────────────────────────────────────────
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
-  // Khởi tạo trực tiếp từ localStorage — không cần useEffect
   const [token, setToken] = useState<string | null>(getStoredToken);
   const [user, setUser]   = useState<User | null>(getStoredUser);
 
@@ -59,9 +64,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     localStorage.removeItem("interact_hub_user");
   };
 
+  const isAdmin = user?.roles.includes("Admin") ?? false;
+
   return (
     <AuthContext.Provider
-      value={{ user, token, isAuthenticated: !!token, login, logout }}
+      value={{ user, token, isAuthenticated: !!token, isAdmin, login, logout }}
     >
       {children}
     </AuthContext.Provider>
