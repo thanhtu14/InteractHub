@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import Navbar from "../components/Navigation";
-import FriendRequestList from "../components/FriendRequestList";
+import Navbar from "../../components/Navigation";
+import FriendRequestList from "../../components/FriendRequestList";
 
 interface User {
   id: string | number;

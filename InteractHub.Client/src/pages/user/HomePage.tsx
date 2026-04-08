@@ -1,12 +1,12 @@
 import React, { useState } from "react";
 import { FaChevronRight } from "react-icons/fa";
-import Navbar from "../components/Navigation";
-import PostingForm from "../components/PostingForm";
-import StoryList from "../components/StoryList";
-import FriendList from "../components/ListFriends";
-import NotificationList from "../components/NotificationList";
-import FriendRequestList from "../components/FriendRequestList";
-import PostList from "../components/ContainerPost";
+import Navbar from "../../components/Navigation";
+import PostingForm from "../../components/PostingForm";
+import StoryList from "../../components/StoryList";
+import FriendList from "../../components/ListFriends";
+import NotificationList from "../../components/NotificationList";
+import FriendRequestList from "../../components/FriendRequestList";
+import PostList from "../../components/ContainerPost";
 
 interface User {
   id: string | number;

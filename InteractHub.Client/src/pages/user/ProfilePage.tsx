@@ -1,11 +1,11 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import Navbar from "../components/Navigation";
-import ProfileHeader from "../components/ProfileHeader";
-import ListFriendsByID from "../components/ListFriendsByID";
-import PostList from "../components/ContainerPost";
-import PostingForm from "../components/PostingForm";
-import InfoContainer from "../components/InfoContainer";
+import Navbar from "../../components/Navigation";
+import ProfileHeader from "../../components/ProfileHeader";
+import ListFriendsByID from "../../components/ListFriendsByID";
+import PostList from "../../components/ContainerPost";
+import PostingForm from "../../components/PostingForm";
+import InfoContainer from "../../components/InfoContainer";
 
 interface User {
   id: string | number;
