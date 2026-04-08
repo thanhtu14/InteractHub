@@ -1,5 +1,5 @@
 import axiosInstance from "./axiosInstance"; // ✅ chữ I hoa
-import type { RegisterFormData } from "../components/FormRegister";
+import type { RegisterFormData } from "../schemas/auth.schema";
 
 export const loginAPI = (email: string, password: string) =>
   axiosInstance.post("/api/auth/login", { email, password });
