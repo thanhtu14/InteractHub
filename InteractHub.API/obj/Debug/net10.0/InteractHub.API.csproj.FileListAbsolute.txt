@@ -163,3 +163,5 @@ D:\Csharp\InteractHub\InteractHub.API\obj\Debug\net10.0\InteractHub.API.genrunti
 D:\Csharp\InteractHub\InteractHub.API\obj\Debug\net10.0\ref\InteractHub.API.dll
 D:\Csharp\InteractHub\InteractHub.API\obj\Debug\net10.0\InteractHub.API.sourcelink.json
 D:\CSharp\InteractHub\InteractHub.API\bin\Debug\net10.0\BCrypt.Net-Next.dll
+D:\CSharp\InteractHub\InteractHub.API\bin\Debug\net10.0\AspNet.Security.OAuth.GitHub.dll
+D:\CSharp\InteractHub\InteractHub.API\bin\Debug\net10.0\Microsoft.AspNetCore.Authentication.Google.dll

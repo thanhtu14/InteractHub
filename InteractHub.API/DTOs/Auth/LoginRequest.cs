@@ -4,10 +4,10 @@ namespace InteractHub.API.DTOs;
 
 public class LoginRequest
 {
-    [Required(ErrorMessage = "Email là bắt buộc.")]
-    [EmailAddress(ErrorMessage = "Định dạng Email không hợp lệ.")]
+    [Required(ErrorMessage = "Vui lòng nhập email")]
+    [EmailAddress(ErrorMessage = "Email không hợp lệ")]
     public string Email { get; set; } = string.Empty;
 
-    [Required(ErrorMessage = "Mật khẩu không được để trống.")]
+    [Required(ErrorMessage = "Vui lòng nhập mật khẩu")]
     public string Password { get; set; } = string.Empty;
 }

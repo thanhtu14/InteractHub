@@ -1,18 +1,19 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import axios from "axios";
 
 import LoginForm from "../components/FormLogin";
 import FormRegister from "../components/FormRegister";
+import ForgotPassword from "../components/ForgotPassword"; // Import component mới
 import useAuth from "../context/useAuth";
+import { loginAPI, registerAPI } from "../services/authService";
 
 import type { LoginFormData } from "../components/FormLogin";
 import type { RegisterFormData } from "../components/FormRegister";
 
-// 🔧 MOCK — uncomment khi có BE:
-// import { loginAPI, registerAPI } from "../services/authService";
-
 const LoginPage = () => {
-  const [isRegistering, setIsRegistering] = useState(false);
+  // Thay thế boolean bằng string để quản lý 3 màn hình
+  const [authMode, setAuthMode] = useState<"login" | "register" | "forgot">("login");
   const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
 
@@ -24,25 +25,12 @@ const LoginPage = () => {
     setLoading(true);
     setErrorMessage("");
     try {
-      // ── Khi có BE: uncomment, xóa mock ──
-      // const res = await loginAPI(formData.email, formData.password);
-      // login(res.data.user, res.data.token);
-      // navigate("/homepage");
-
-      // 🔧 MOCK
-      await new Promise((r) => setTimeout(r, 800));
-      const mockUser = {
-        id: "1",
-        username: "quangvinh",
-        email: formData.email,
-        avatarUrl: "https://i.pravatar.cc/150?u=vinh",
-        roles: ["User"],
-      };
-      login(mockUser, "mock.jwt.token_" + Date.now());
+      const res = await loginAPI(formData.email, formData.password);
+      login(res.data.user, res.data.token);
       navigate("/homepage");
     } catch (error: unknown) {
-      if (error instanceof Error) {
-        setErrorMessage(error.message);
+      if (axios.isAxiosError(error)) {
+        setErrorMessage(error.response?.data?.message || "Đăng nhập thất bại");
       } else {
         setErrorMessage("Đăng nhập thất bại. Vui lòng thử lại.");
       }
@@ -56,26 +44,14 @@ const LoginPage = () => {
     setLoading(true);
     setErrorMessage("");
     try {
-      // ── Khi có BE: uncomment, xóa mock ──
-      // await registerAPI(formData);
-      // setIsRegistering(false);
-
-      // 🔧 MOCK
-      await new Promise((r) => setTimeout(r, 800));
-      const mockUser = {
-        id: "2",
-        username: formData.fullName,
-        email: formData.email,
-        avatarUrl: undefined,
-        roles: ["User"],
-      };
-      login(mockUser, "mock.jwt.token_" + Date.now());
+      const res = await registerAPI(formData);
+      login(res.data.user, res.data.token);
       navigate("/homepage");
     } catch (error: unknown) {
-      if (error instanceof Error) {
-        setErrorMessage(error.message);
+      if (axios.isAxiosError(error)) {
+        setErrorMessage(error.response?.data?.message || "Đăng ký thất bại");
       } else {
-        setErrorMessage("Đăng ký thất bại. Email có thể đã tồn tại.");
+        setErrorMessage("Đăng ký thất bại. Vui lòng thử lại.");
       }
     } finally {
       setLoading(false);
@@ -90,41 +66,50 @@ const LoginPage = () => {
         backgroundImage: `url('https://images.unsplash.com/photo-1557682250-33bd709cbe85?q=80&w=2029&auto=format&fit=crop')`,
       }}
     >
-      {/* Overlay */}
       <div className="absolute inset-0 bg-gradient-to-br from-black/60 via-black/40 to-black/60" />
 
-      {/* Layout 2 cột — giống nhau cho cả login lẫn register */}
       <div className="relative z-10 w-full max-w-6xl px-4">
         <div className="flex flex-col lg:flex-row items-center justify-center gap-16 lg:gap-24">
 
-          {/* CỘT TRÁI — tiêu đề (luôn hiện) */}
+          {/* CỘT TRÁI */}
           <div className="flex-1 max-w-[520px] text-white text-center lg:text-left">
             <h1 className="text-7xl font-bold tracking-tight mb-4 text-white drop-shadow-lg">
               interacthub
             </h1>
             <p className="text-2xl leading-relaxed text-white/90">
-              {isRegistering
-                ? "Join millions of people sharing moments that matter."
+              {authMode === "register" 
+                ? "Join millions of people sharing moments that matter." 
                 : "Interacthub helps you connect and share with the people in your life."}
             </p>
           </div>
 
-          {/* CỘT PHẢI — form (login hoặc register) */}
+          {/* CỘT PHẢI */}
           <div className="w-full max-w-md relative">
-            <div className="bg-white backdrop-blur-xl rounded-3xl shadow-2xl p-8 border border-white/50">
-              {isRegistering ? (
-                <FormRegister
-                  onSubmit={handleRegister}
-                  onBackToLogin={() => { setIsRegistering(false); setErrorMessage(""); }}
+            <div className="bg-white backdrop-blur-xl rounded-3xl shadow-2xl p-8 border border-white/50 min-h-[450px] flex flex-col justify-center">
+              
+              {/* SWITCH GIAO DIỆN TẠI ĐÂY */}
+              {authMode === "login" && (
+                <LoginForm
+                  onSubmit={handleLogin}
+                  onRegister={() => { setAuthMode("register"); setErrorMessage(""); }}
+                  onForgotPassword={() => { setAuthMode("forgot"); setErrorMessage(""); }} // Cần thêm prop này vào LoginForm
                   isLoading={loading}
                   errorMessage={errorMessage}
                 />
-              ) : (
-                <LoginForm
-                  onSubmit={handleLogin}
-                  onRegister={() => { setIsRegistering(true); setErrorMessage(""); }}
+              )}
+
+              {authMode === "register" && (
+                <FormRegister
+                  onSubmit={handleRegister}
+                  onBackToLogin={() => { setAuthMode("login"); setErrorMessage(""); }}
                   isLoading={loading}
                   errorMessage={errorMessage}
+                />
+              )}
+
+              {authMode === "forgot" && (
+                <ForgotPassword 
+                  onBackToLogin={() => { setAuthMode("login"); setErrorMessage(""); }} 
                 />
               )}
             </div>
@@ -141,7 +126,6 @@ const LoginPage = () => {
               </div>
             )}
           </div>
-
         </div>
       </div>
     </div>

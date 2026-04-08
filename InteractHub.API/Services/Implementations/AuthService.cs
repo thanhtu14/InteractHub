@@ -54,7 +54,7 @@ public class AuthService : IAuthService
         // 1. Tìm user theo email — gọi qua Repository
         var user = await _userRepository.GetByEmailAsync(request.Email);
         if (user == null)
-            throw new Exception("Email không tồn tại.");
+            throw new Exception("Tài khoản không tồn tại.");
 
         // 2. Kiểm tra mật khẩu
         var isValid = BCrypt.Net.BCrypt.Verify(request.Password, user.Password);

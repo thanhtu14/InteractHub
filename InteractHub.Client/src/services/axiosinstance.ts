@@ -1,19 +1,17 @@
 import axios from "axios";
 
-// ── Tạo axios instance với base URL ──────────────────────────
 const axiosInstance = axios.create({
-  baseURL: "http://localhost:8080",
+  baseURL: "https://localhost:7069", // ✅ đúng port BE
   timeout: 10000,
   headers: {
     "Content-Type": "application/json",
   },
 });
 
-// ── Request Interceptor ───────────────────────────────────────
 // Tự động gắn JWT token vào header mỗi request
 axiosInstance.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem("auth_token");
+    const token = localStorage.getItem("interact_hub_token"); // ✅ đúng key với AuthContext
     if (token) {
       config.headers["Authorization"] = `Bearer ${token}`;
     }
@@ -22,7 +20,6 @@ axiosInstance.interceptors.request.use(
   (error) => Promise.reject(error)
 );
 
-// ── Response Interceptor ──────────────────────────────────────
 // Xử lý lỗi tập trung
 axiosInstance.interceptors.response.use(
   (response) => response,
@@ -30,10 +27,15 @@ axiosInstance.interceptors.response.use(
     const status = error.response?.status;
 
     if (status === 401) {
-      // Token hết hạn hoặc không hợp lệ → logout
-      localStorage.removeItem("auth_token");
-      localStorage.removeItem("user");
-      window.location.href = "/login";
+      // const currentPath = window.location.pathname;
+
+      // // Chỉ redirect nếu KHÔNG phải đang ở trang login
+      // // Tức là token hết hạn trong khi đang dùng app
+      // if (currentPath !== "/login") {
+      //   localStorage.removeItem("interact_hub_token");
+      //   localStorage.removeItem("interact_hub_user");
+      //   window.location.href = "/login";
+      // }
     }
 
     if (status === 403) {

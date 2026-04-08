@@ -13,9 +13,6 @@ public class RegisterRequest
     public string Email { get; set; } = string.Empty;
 
     [Required(ErrorMessage = "Mật khẩu không được để trống.")]
-    [MinLength(6, ErrorMessage = "Mật khẩu phải có ít nhất 6 ký tự.")]
+    [MinLength(8, ErrorMessage = "Mật khẩu phải có ít nhất 8 ký tự.")]
     public string Password { get; set; } = string.Empty;
-
-    [Compare("Password", ErrorMessage = "Mật khẩu xác nhận không khớp.")]
-    public string ConfirmPassword { get; set; } = string.Empty;
 }

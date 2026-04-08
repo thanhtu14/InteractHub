@@ -2,23 +2,23 @@ using System.Text;
 using InteractHub.API.Data;
 using InteractHub.API.Repositories;
 using InteractHub.API.Services;
+using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// ── 1. Database ───────────────────────────────────────────────
+// ── 1. Database ──────────────────────────────────────────────────
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 
-// ── 2. Đăng ký Repository ────────────────────────────────────
+// ── 2. Dependency Injection ──────────────────────────────────────
 builder.Services.AddScoped<IUserRepository, UserRepository>();
-
-// ── 3. Đăng ký Service ───────────────────────────────────────
 builder.Services.AddScoped<IAuthService, AuthService>();
 
-// ── 4. JWT Authentication ─────────────────────────────────────
+// ── 3. Authentication Configuration ──────────────────────────────
 var jwtSettings = builder.Configuration.GetSection("JwtSettings");
 var secretKey   = jwtSettings["SecretKey"]!;
 
@@ -26,53 +26,95 @@ builder.Services.AddAuthentication(options =>
 {
     options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
     options.DefaultChallengeScheme    = JwtBearerDefaults.AuthenticationScheme;
+    options.DefaultSignInScheme       = CookieAuthenticationDefaults.AuthenticationScheme;
+})
+.AddCookie(CookieAuthenticationDefaults.AuthenticationScheme, options =>
+{
+    options.Cookie.Name = "InteractHub.Auth";
+    options.Cookie.HttpOnly = true;
+    options.Cookie.SameSite = SameSiteMode.Lax; 
+    options.Cookie.SecurePolicy = CookieSecurePolicy.Always; // Bắt buộc cho HTTPS
 })
 .AddJwtBearer(options =>
 {
     options.TokenValidationParameters = new TokenValidationParameters
     {
-        ValidateIssuer           = true,
-        ValidateAudience         = true,
-        ValidateLifetime         = true,
+        ValidateIssuer = true,
+        ValidateAudience = true,
+        ValidateLifetime = true,
         ValidateIssuerSigningKey = true,
-        ValidIssuer              = jwtSettings["Issuer"],
-        ValidAudience            = jwtSettings["Audience"],
-        IssuerSigningKey         = new SymmetricSecurityKey(
-                                       Encoding.UTF8.GetBytes(secretKey)),
+        ValidIssuer = jwtSettings["Issuer"],
+        ValidAudience = jwtSettings["Audience"],
+        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secretKey)),
     };
+})
+.AddGoogle(options =>
+{
+    options.ClientId     = builder.Configuration["Authentication:Google:ClientId"]!;
+    options.ClientSecret = builder.Configuration["Authentication:Google:ClientSecret"]!;
+    // Đảm bảo URL này khớp chính xác với Google Cloud Console
+    options.CallbackPath = "/signin-google"; 
+})
+.AddGitHub(options =>
+{
+    options.ClientId     = builder.Configuration["Authentication:GitHub:ClientId"]!;
+    options.ClientSecret = builder.Configuration["Authentication:GitHub:ClientSecret"]!;
+    options.CallbackPath = "/signin-github";
+    options.Scope.Add("user:email");
+});
+
+// ── 4. Cookie & Security Policy (Sửa lỗi Correlation Failed) ──
+builder.Services.ConfigureExternalCookie(options =>
+{
+    // Ép buộc tất cả Cookie từ Google/GitHub phải dùng HTTPS và Lax mode
+    options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
+    options.Cookie.SameSite = SameSiteMode.Lax;
+});
+
+builder.Services.Configure<CookiePolicyOptions>(options =>
+{
+    options.CheckConsentNeeded = context => false;
+    options.MinimumSameSitePolicy = SameSiteMode.Lax;
 });
 
 builder.Services.AddAuthorization();
 
-// ── 5. CORS ───────────────────────────────────────────────────
+// ── 5. CORS ──────────────────────────────────────────────────────
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowReactApp", policy =>
     {
-        policy.WithOrigins("http://localhost:5173")
+        policy.WithOrigins("http://localhost:5173") // Frontend port
               .AllowAnyHeader()
               .AllowAnyMethod()
               .AllowCredentials();
     });
 });
 
-// ── 6. Controllers + Swagger ──────────────────────────────────
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
 var app = builder.Build();
 
-// ── 7. Middleware pipeline ────────────────────────────────────
+// ── 6. Middleware Pipeline ───────────────────────────────────────
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
     app.UseSwaggerUI();
 }
 
+// Quan trọng: Phải dùng HttpsRedirection để ép mọi request về cổng 7069
+app.UseHttpsRedirection();
+
 app.UseCors("AllowReactApp");
+
+// CookiePolicy phải đứng trước Authentication
+app.UseCookiePolicy(); 
+
 app.UseAuthentication();
 app.UseAuthorization();
+
 app.MapControllers();
 
 app.Run();
