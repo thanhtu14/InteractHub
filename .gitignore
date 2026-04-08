@@ -1,0 +1,15 @@
+# --- Chặn thư mục build của .NET (Rất quan trọng) ---
+**/bin/
+**/obj/
+InteractHub.API/appsettings.Development.json
+
+# --- Chặn thư mục của React ---
+InteractHub.Client/node_modules/
+InteractHub.Client/dist/
+InteractHub.Client/.env
+
+# --- Chặn file rác của Editor ---
+.vscode/
+.idea/
+*.sln
+*.user
