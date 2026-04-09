@@ -64,12 +64,18 @@ const PostingForm: React.FC<PostingFormProps> = ({ user, variant = "home" }) => 
         <button
           onClick={() => setShowForm(true)}
           className="flex-1 bg-[#3a3b3c] hover:bg-[#4a4b4d] text-left text-gray-300 
-                     text-[17px] py-3.5 px-5 rounded-full transition-all duration-200
-                     focus:outline-none focus:ring-2 focus:ring-[#1877f2] active:scale-[0.985]"
+             text-[17px] py-3.5 px-5 rounded-full transition-all duration-200
+             focus:outline-none focus:ring-2 focus:ring-[#1877f2] active:scale-[0.985]"
         >
-          {displayUser?.Username || displayUser?.fullName
-            ? `${displayUser.Username || displayUser.fullName} ơi, bạn đang nghĩ gì thế?`
-            : "Bạn đang nghĩ gì thế?"}
+          {(() => {
+            const name = displayUser?.Username || displayUser?.fullName;
+            if (!name) return "Bạn đang nghĩ gì thế?";
+
+            // Logic cắt chữ cuối: Trim khoảng trắng -> Cắt mảng -> Lấy phần tử cuối
+            const lastName = name.trim().split(" ").pop();
+
+            return `${lastName} ơi, bạn đang nghĩ gì thế?`;
+          })()}
         </button>
       </div>
 
@@ -85,9 +91,9 @@ const PostingForm: React.FC<PostingFormProps> = ({ user, variant = "home" }) => 
 
       {/* Post Modal */}
       {showForm && (
-        <PostModal 
-          user={displayUser} 
-          onClose={() => setShowForm(false)} 
+        <PostModal
+          user={displayUser}
+          onClose={() => setShowForm(false)}
         />
       )}
     </div>

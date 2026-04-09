@@ -67,7 +67,7 @@ public class UsersController : ControllerBase
     // ── 4. POST api/users/upload-avatar ──────────────────────────
     [HttpPost("upload-avatar")]
     [Authorize]
-    public async Task<IActionResult> UploadAvatar([FromForm] IFormFile file)
+    public async Task<IActionResult> UploadAvatar(IFormFile file)
     {
         var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
         if (string.IsNullOrEmpty(userId)) return Unauthorized();

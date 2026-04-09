@@ -43,7 +43,7 @@ const HomePage: React.FC = () => {
     <div className="h-screen bg-[#18191a] overflow-hidden flex flex-col">
 
       <Navbar
-        user={user}
+       
         onChatClick={handleChatClick}
         onNotifyClick={handleNotifyClick}
       />

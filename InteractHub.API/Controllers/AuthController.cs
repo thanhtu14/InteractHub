@@ -3,7 +3,7 @@ using System.Security.Claims;
 using System.Text;
 using InteractHub.API.DTOs.Auth;
 using InteractHub.API.DTOs.User;
-using InteractHub.API.Entities;
+using UserEntity = InteractHub.API.Entities.User; // Đặt tên đại diện là UserEntity
 using InteractHub.API.Services.Interfaces;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
@@ -18,12 +18,12 @@ namespace InteractHub.API.Controllers;
 public class AuthController : ControllerBase
 {
     private readonly IAuthService _authService;
-    private readonly UserManager<User> _userManager;
+    private readonly UserManager<UserEntity> _userManager;
     private readonly IConfiguration _config;
 
     public AuthController(
         IAuthService authService,
-        UserManager<User> userManager,
+        UserManager<UserEntity> userManager,
         IConfiguration config)
     {
         _authService = authService;
@@ -134,7 +134,7 @@ public class AuthController : ControllerBase
     }
 
     // ── 5. Handle OAuth chung ───────────────────────────────────
-    private async Task<IActionResult> HandleOAuthLogin(string email, string fullName, string avatar)
+    private async Task<IActionResult> HandleOAuthLogin(string email, string fullName, string avatar = "/images/avatars/default-avatar.png")
     {
         if (string.IsNullOrEmpty(email))
             return Redirect("http://localhost:5173/login?error=no_email");
@@ -144,7 +144,7 @@ public class AuthController : ControllerBase
         // 🔥 nếu chưa có user → tạo mới
         if (user == null)
         {
-            user = new User
+            user = new UserEntity
             {
                 Email = email,
                 UserName = email,
@@ -179,7 +179,7 @@ public class AuthController : ControllerBase
     }
 
     // ── 6. Generate JWT ─────────────────────────────────────────
-    private string GenerateJwtToken(User user, IList<string> roles)
+    private string GenerateJwtToken(UserEntity user, IList<string> roles)
     {
         var jwtSettings = _config.GetSection("JwtSettings");
         var secretKey = jwtSettings["SecretKey"]!;
