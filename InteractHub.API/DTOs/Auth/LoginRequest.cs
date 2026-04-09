@@ -1,6 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 
-namespace InteractHub.API.DTOs;
+namespace InteractHub.API.DTOs.Auth;
 
 public class LoginRequest
 {

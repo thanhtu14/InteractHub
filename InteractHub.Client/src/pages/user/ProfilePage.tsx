@@ -1,138 +1,183 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
+import { FaTimes } from "react-icons/fa";
 import Navbar from "../../components/Navigation";
 import ProfileHeader from "../../components/ProfileHeader";
 import ListFriendsByID from "../../components/ListFriendsByID";
 import PostList from "../../components/ContainerPost";
-import PostingForm from "../../components/PostingForm";
 import InfoContainer from "../../components/InfoContainer";
+import ProfileUpdateForm from "../../components/Profileupdateform";
+import PostingForm from "../../components/PostingForm";
 
+// ── Interface khớp với UserDto từ Backend ─────────────────────
 interface User {
-  id: string | number;
-  fullName?: string;
-  avatarUrl?: string;
-  coverUrl?: string;
-  bio?: string;
+  Id: string;
+  Username: string;
+  Email: string;
+  Phone?: string;
+  AvatarUrl?: string;
+  CoverUrl?: string;
+  Bio?: string;
+  Gender?: string;
+  DateOfBirth?: string;
+  CreatedAt?: string;
+  Roles: string[];
 }
 
-const Profilepage = () => {
+const ProfilePage: React.FC = () => {
   const [user, setUser] = useState<User | null>(null);
   const [loggedInUser, setLoggedInUser] = useState<User | null>(null);
+  const [showModal, setShowModal] = useState(false);
+  const [loading, setLoading] = useState(true);
+
   const navigate = useNavigate();
   const { id: paramId } = useParams();
+  const token = localStorage.getItem("interact_hub_token");
 
+  // ── Fetch dữ liệu user ────────────────────────────────────
   useEffect(() => {
-    // 1. LẤY USER ĐANG ĐĂNG NHẬP (Từ LocalStorage)
-    const storedUser = localStorage.getItem("user");
-    
-    // GIẢ LẬP: Nếu chưa có user trong localStorage, tự tạo một user giả để không bị văng ra Login
-    const defaultUser = { 
-      id: 1, 
-      fullName: "Bùi Gia Quang Vinh", 
-      avatarUrl: "https://i.pravatar.cc/150?u=vinh" 
+    const fetchUserData = async () => {
+      setLoading(true);
+      try {
+        const url = paramId
+          ? `https://localhost:7069/api/users/${paramId}`
+          : `https://localhost:7069/api/users/me`;
+
+        const res = await fetch(url, {
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+        });
+
+        if (res.status === 401) {
+          navigate("/login");
+          return;
+        }
+
+        if (res.ok) {
+          const data: User = await res.json();
+          setUser(data);
+
+          if (!paramId) {
+            setLoggedInUser(data);
+            localStorage.setItem("interact_hub_user", JSON.stringify(data));
+          } else {
+            // Lấy thêm thông tin người dùng đang đăng nhập để so sánh
+            const storedUser = localStorage.getItem("interact_hub_user");
+            if (storedUser) setLoggedInUser(JSON.parse(storedUser));
+          }
+        }
+      } catch (err) {
+        console.error("Lỗi kết nối API:", err);
+      } finally {
+        setLoading(false);
+      }
     };
-    
-    const parsedUser = storedUser ? JSON.parse(storedUser) : defaultUser;
-    setLoggedInUser(parsedUser);
 
-    // 2. XỬ LÝ LẤY DỮ LIỆU TRANG CÁ NHÂN (Mock Data thay cho API)
-    const targetUserId = paramId || parsedUser.id;
+    fetchUserData();
+  }, [paramId, token, navigate]);
 
-    // --- PHẦN COMMENT BE (BẬT LẠI KHI CÓ API) ---
-    /*
-    axios.get(`http://localhost:8080/auth/${targetUserId}`)
-      .then((res) => {
-        setUser(res.data);
-      })
-      .catch((err) => {
-        console.error("Lỗi API:", err);
-        navigate("/");
-      });
-    */
+  // ── Callback khi update thành công ────────────────────────
+  const handleSubmitSuccess = (updatedUser: User) => {
+    setUser(updatedUser);
+    setLoggedInUser(updatedUser);
+    // Đóng modal sau 1.5s để người dùng thấy toast
+    setTimeout(() => setShowModal(false), 1500);
+  };
 
-    // --- PHẦN MOCK DATA (XÓA KHI CÓ BE) ---
-    const mockData: User = {
-      id: targetUserId,
-      fullName: targetUserId == 1 ? "Bùi Gia Quang Vinh" : "Người Bạn Demo",
-      avatarUrl: `https://i.pravatar.cc/150?u=${targetUserId}`,
-      bio: "Sống là để sẻ chia và học hỏi kiến thức mới mỗi ngày. 🚀",
-    };
-    
-    // Giả lập độ trễ mạng 500ms cho chuyên nghiệp
-    const timer = setTimeout(() => setUser(mockData), 500);
-    return () => clearTimeout(timer);
-
-  }, [navigate, paramId]);
-
-  if (!user || !loggedInUser) {
+  // ── Loading state ─────────────────────────────────────────
+  if (loading || !user) {
     return (
       <div className="min-h-screen bg-[#18191a] flex items-center justify-center">
-        <div className="animate-spin rounded-full h-10 w-10 border-4 border-[#1877f2] border-t-transparent"></div>
+        <div className="animate-spin rounded-full h-10 w-10 border-4 border-[#1877f2] border-t-transparent" />
       </div>
     );
   }
 
+  const isOwnProfilePage = !paramId || user.Id === loggedInUser?.Id;
+
   return (
     <div className="min-h-screen bg-[#18191a] text-white">
-      {/* Navbar luôn ở trên cùng */}
-      <Navbar user={loggedInUser} />
+      <Navbar user={loggedInUser ?? user} />
 
-      {/* Phần đầu trang: Ảnh bìa & Avatar */}
-      <div className="bg-[#242526] shadow-md">
-        <ProfileHeader userId={user.id} />
-      </div>
+      <ProfileHeader
+        userId={user.Id}
+        isOwnProfile={isOwnProfilePage}
+        onEditProfileClick={() => setShowModal(true)}
+      />
 
-      {/* Bố cục chính: Chia 2 cột */}
-      <div className="max-w-[1100px] mx-auto mt-4 px-4 pb-10">
+      <main className="max-w-[1100px] mx-auto mt-4 px-4 pb-10">
         <div className="flex flex-col lg:flex-row gap-5">
-          
-          {/* CỘT TRÁI (35%): Intro & Friends */}
-          <div className="w-full lg:w-[40%] space-y-4">
-            {/* Khối giới thiệu - Sticky để khi cuộn Post vẫn thấy Info */}
-            <div className="sticky top-20 space-y-4">
-              <div className="bg-[#242526] p-4 rounded-xl border border-gray-800 shadow-sm">
-                <h3 className="text-xl font-bold mb-3">Giới thiệu</h3>
-                <InfoContainer userId={user.id} />
+
+          {/* Sidebar */}
+          <aside className="w-full lg:w-[40%] space-y-4">
+            <div className="lg:sticky lg:top-20 space-y-4">
+              <div className="bg-[#242526] p-4 rounded-xl border border-[#3e4042] shadow-sm">
+                <h3 className="text-xl font-bold mb-2">Giới thiệu</h3>
+                <p className="text-center text-gray-300 mb-4">
+                  {user.Bio || "Chưa có tiểu sử"}
+                </p>
+                <InfoContainer
+                  user={user}             // user là state hoặc props từ ProfilePage
+                  isOwnProfile={isOwnProfilePage} // boolean, tùy chọn
+                />
               </div>
 
-              <div className="bg-[#242526] p-4 rounded-xl border border-gray-700 shadow-sm">
-                <ListFriendsByID userId={user.id} />
+              <div className="bg-[#242526] p-4 rounded-xl border border-[#3e4042] shadow-sm">
+                <ListFriendsByID userId={user.Id} />
               </div>
             </div>
-          </div>
+          </aside>
 
-          {/* CỘT PHẢI (65%): Post & Form */}
-          <div className="w-full lg:w-[60%] space-y-4">
-            {/* Chỉ hiện Form đăng bài nếu là trang của chính mình */}
-            {Number(loggedInUser.id) === Number(user.id) && (
-              <div className="bg-[#242526] rounded-xl shadow-sm overflow-hidden">
-                <PostingForm variant="profile" user={loggedInUser} />
+          {/* Main feed */}
+          <section className="w-full lg:w-[60%] space-y-4">
+            {isOwnProfilePage && (
+              <div className="px-2">
+                <PostingForm user={user} />
               </div>
             )}
 
-            {/* Bộ lọc bài viết */}
-            <div className="bg-[#242526] p-4 rounded-xl flex items-center justify-between border border-gray-800">
+            <div className="bg-[#242526] p-4 rounded-xl flex items-center justify-between border border-[#3e4042] shadow-sm">
               <h3 className="text-lg font-bold">Bài viết</h3>
-              <div className="flex gap-2">
-                <button className="bg-[#3a3b3c] hover:bg-[#4e4f50] px-3 py-1.5 rounded-md text-sm font-semibold transition">
-                   Bộ lọc
-                </button>
-                <button className="bg-[#3a3b3c] hover:bg-[#4e4f50] px-3 py-1.5 rounded-md text-sm font-semibold transition">
-                   Quản lý bài viết
-                </button>
-              </div>
             </div>
 
-            {/* Danh sách bài viết */}
-            <div className="space-y-4">
-              <PostList userId={user.id} />
+            <PostList userId={user.Id} />
+          </section>
+        </div>
+      </main>
+
+      {/* ── Modal chỉnh sửa hồ sơ ── */}
+      {showModal && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/70 backdrop-blur-sm p-4 animate-in fade-in duration-200">
+          <div className="bg-[#242526] rounded-3xl w-full max-w-5xl max-h-[95vh] overflow-hidden relative shadow-2xl border border-[#3e4042] flex flex-col">
+
+            {/* Header modal */}
+            <div className="flex items-center justify-between p-5 border-b border-[#3e4042] shrink-0">
+              <h2 className="text-2xl font-bold text-white">
+                Chỉnh sửa trang cá nhân
+              </h2>
+              <button
+                onClick={() => setShowModal(false)}
+                className="p-2 rounded-full hover:bg-[#3a3b3c] text-gray-400 transition-colors"
+              >
+                <FaTimes size={20} />
+              </button>
+            </div>
+
+            {/* Body modal */}
+            <div className="flex-1 overflow-y-auto p-4 md:p-8 bg-[#1c1d1e]">
+              <ProfileUpdateForm
+                initialData={user}
+                onSubmitSuccess={handleSubmitSuccess}
+                onCancel={() => setShowModal(false)}
+              />
             </div>
           </div>
-
         </div>
-      </div>
+      )}
     </div>
   );
 };
 
-export default Profilepage;
+export default ProfilePage;

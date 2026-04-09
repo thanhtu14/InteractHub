@@ -3,8 +3,7 @@ import { createRoot } from 'react-dom/client';
 import './index.css';
 import App from './App.tsx';
 import GlobalStyles from './components/GlobalStyles.tsx';
-import { AuthProvider } from './context/AuthContext.tsx'; // Import Provider bạn vừa tạo
-
+import { AuthProvider } from "./context/AuthProvider";
 const rootElement = document.getElementById('root');
 
 if (!rootElement) {

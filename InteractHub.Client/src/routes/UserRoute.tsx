@@ -14,7 +14,7 @@ export const UserRoutes = (
             <ProtectedRoute><FriendPage /></ProtectedRoute>
         } />
 
-        <Route path="/profilepage" element={
+        <Route path="/myprofile" element={
             <ProtectedRoute><ProfilePage /></ProtectedRoute>
         } />
 

@@ -1,12 +1,16 @@
 using System.Text;
 using InteractHub.API.Data;
 using InteractHub.API.Entities;
-using InteractHub.API.Services;
+using InteractHub.API.Services.Implementations;
+using InteractHub.API.Services.Interfaces;
+using InteractHub.API.Repositories.Interfaces;
+using InteractHub.API.Repositories.Implementations;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
+using Microsoft.Extensions.FileProviders;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -27,10 +31,11 @@ builder.Services.AddIdentity<User, IdentityRole>(options =>
 .AddDefaultTokenProviders();
 
 // ── 3. Dependency Injection ──────────────────────────────────────
-// Bỏ IUserRepository vì đã dùng UserManager từ Identity
 builder.Services.AddScoped<IAuthService, AuthService>();
+builder.Services.AddScoped<IUserService, UserService>();
+builder.Services.AddScoped<IUserRepository, UserRepository>();
 
-// ── 4. Authentication Configuration ──────────────────────────────
+// ── 4. JWT Authentication ────────────────────────────────────────
 var jwtSettings = builder.Configuration.GetSection("JwtSettings");
 var secretKey   = jwtSettings["SecretKey"]!;
 
@@ -45,7 +50,7 @@ builder.Services.AddAuthentication(options =>
     options.Cookie.Name         = "InteractHub.Auth";
     options.Cookie.HttpOnly     = true;
     options.Cookie.SameSite     = SameSiteMode.Lax;
-    options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
+    options.Cookie.SecurePolicy = CookieSecurePolicy.SameAsRequest;
 })
 .AddJwtBearer(options =>
 {
@@ -58,6 +63,16 @@ builder.Services.AddAuthentication(options =>
         ValidIssuer              = jwtSettings["Issuer"],
         ValidAudience            = jwtSettings["Audience"],
         IssuerSigningKey         = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secretKey)),
+        ClockSkew                = TimeSpan.Zero
+    };
+
+    options.Events = new JwtBearerEvents
+    {
+        OnAuthenticationFailed = context =>
+        {
+            Console.WriteLine("JWT Error: " + context.Exception.Message);
+            return Task.CompletedTask;
+        }
     };
 })
 .AddGoogle(options =>
@@ -77,7 +92,7 @@ builder.Services.AddAuthentication(options =>
 // ── 5. Cookie & Security Policy ───────────────────────────────────
 builder.Services.ConfigureExternalCookie(options =>
 {
-    options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
+    options.Cookie.SecurePolicy = CookieSecurePolicy.SameAsRequest;
     options.Cookie.SameSite     = SameSiteMode.Lax;
 });
 
@@ -87,9 +102,10 @@ builder.Services.Configure<CookiePolicyOptions>(options =>
     options.MinimumSameSitePolicy = SameSiteMode.Lax;
 });
 
+// ── 6. Authorization ─────────────────────────────────────────────
 builder.Services.AddAuthorization();
 
-// ── 6. CORS ──────────────────────────────────────────────────────
+// ── 7. CORS ──────────────────────────────────────────────────────
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowReactApp", policy =>
@@ -101,16 +117,23 @@ builder.Services.AddCors(options =>
     });
 });
 
-builder.Services.AddControllers();
+// ── 8. Controllers + JSON config ─────────────────────────────────
+builder.Services.AddControllers()
+    .AddJsonOptions(options =>
+    {
+        options.JsonSerializerOptions.PropertyNamingPolicy = null; // Giữ nguyên PascalCase
+    });
+
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
 var app = builder.Build();
 
-// ── 7. Seed Roles ─────────────────────────────────────────────────
+// ── 9. Seed Roles ─────────────────────────────────────────────────
 using (var scope = app.Services.CreateScope())
 {
     var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>();
+
     foreach (var role in new[] { "User", "Admin" })
     {
         if (!await roleManager.RoleExistsAsync(role))
@@ -118,7 +141,7 @@ using (var scope = app.Services.CreateScope())
     }
 }
 
-// ── 8. Middleware Pipeline ────────────────────────────────────────
+// ── 10. Middleware Pipeline ───────────────────────────────────────
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
@@ -128,8 +151,28 @@ if (app.Environment.IsDevelopment())
 app.UseHttpsRedirection();
 app.UseCors("AllowReactApp");
 app.UseCookiePolicy();
+
+// ── 11. Static Files ──────────────────────────────────────────────
+// Serve wwwroot mặc định (index.html, css, js,...)
+app.UseStaticFiles();
+
+// Serve riêng thư mục wwwroot/images/avatars qua URL /avatars/...
+// Ví dụ: https://localhost:7069/avatars/abc123.jpg
+var avatarsPath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "images", "avatars");
+if (!Directory.Exists(avatarsPath))
+    Directory.CreateDirectory(avatarsPath); // Tự tạo thư mục nếu chưa có
+
+app.UseStaticFiles(new StaticFileOptions
+{
+    FileProvider = new PhysicalFileProvider(avatarsPath),
+    RequestPath  = "/avatars"
+});
+
+// ── 12. Authentication & Authorization ───────────────────────────
 app.UseAuthentication();
 app.UseAuthorization();
+
+// ── 13. Map Controllers ──────────────────────────────────────────
 app.MapControllers();
 
 app.Run();

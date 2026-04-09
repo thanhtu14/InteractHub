@@ -1,141 +1,91 @@
-import { useEffect, useState } from "react";
-import axios from "axios";
+// InfoContainer.tsx
+import { useState } from "react";
 import SettingForm from "./SettingForm";
 
-interface User {
-  id: string | number;
-  email: string;
-  gender?: string;
-  birthday?: string;
-  bio?: string;
-  createdAt: string;
-  fullName?: string;
-  
-  // các trường khác nếu cần
+// ── Interface khớp với UserDto từ Backend ─────────────────────
+export interface User {
+  Id: string;
+  Username: string;
+  Email: string;
+  AvatarUrl?: string | null;
+  CoverUrl?: string | null;
+  DateOfBirth?: string | null;
+  CreatedAt?: string | null;
+  Gender?: string | null;
+  Bio?: string | null;
+  Roles: string[];
 }
 
 interface InfoContainerProps {
-  userId: string | number;
+  user: User;                  // Nhận user trực tiếp từ ProfilePage
+  isOwnProfile?: boolean;      // Có phải trang của chính mình
 }
 
-const InfoContainer = ({ userId }: InfoContainerProps) => {
-  const [user, setUser] = useState<User | null>(null);
-  const [currentUserId, setCurrentUserId] = useState<string | number | null>(null);
+const InfoContainer: React.FC<InfoContainerProps> = ({ user, isOwnProfile = false }) => {
   const [isEditing, setIsEditing] = useState(false);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    if (!userId) {
-      setLoading(false);
-      return;
-    }
-
-    // Lấy thông tin user hiện tại từ localStorage
-    const storedUser = localStorage.getItem("user");
-    if (storedUser) {
-      const parsedUser = JSON.parse(storedUser);
-      setCurrentUserId(parsedUser.id);
-    }
-
-    // Lấy thông tin người dùng cần hiển thị
-    axios
-      .get(`http://localhost:8080/auth/${userId}`)
-      .then((res) => {
-        setUser(res.data);
-      })
-      .catch((err) => {
-        console.error("Không thể lấy thông tin người dùng", err);
-      })
-      .finally(() => {
-        setLoading(false);
-      });
-  }, [userId]);
-
-  if (loading) {
-    return (
-      <div className="bg-[#242526] rounded-2xl p-8 text-center">
-        <p className="text-gray-400">Đang tải thông tin...</p>
-      </div>
-    );
-  }
-
-  if (!user) {
-    return (
-      <div className="bg-[#242526] rounded-2xl p-8 text-center">
-        <p className="text-red-400">Không tìm thấy thông tin người dùng</p>
-      </div>
-    );
-  }
-
-  const isOwnProfile = currentUserId === userId;
 
   return (
     <div className="bg-[#242526] border border-gray-700 rounded-3xl p-8 shadow-xl">
-      {/* Title */}
-      <h3 className="text-2xl font-bold text-white mb-6 pb-4 border-b border-gray-700">
+      <h4 className="text-2xl font-bold text-white mb-6 pb-4 border-b border-gray-700">
         Thông tin cá nhân
-      </h3>
+      </h4>
 
-      {/* Thông tin chi tiết */}
       <div className="space-y-5 text-gray-300">
+        {/* Username */}
+        <div className="flex flex-col sm:flex-row sm:items-center gap-2">
+          <span className="font-medium text-gray-400 w-32">Tên:</span>
+          <span className="text-white">{user.Username || "Chưa cập nhật"}</span>
+        </div>
+
+        {/* Email */}
         <div className="flex flex-col sm:flex-row sm:items-center gap-2">
           <span className="font-medium text-gray-400 w-32">Email:</span>
-          <span className="text-white">{user.email}</span>
+          <span className="text-white">{user.Email}</span>
         </div>
 
+        {/* Gender */}
         <div className="flex flex-col sm:flex-row sm:items-center gap-2">
           <span className="font-medium text-gray-400 w-32">Giới tính:</span>
-          <span className="text-white">
-            {user.gender || "Chưa cập nhật"}
-          </span>
+          <span className="text-white">{user.Gender || "Chưa cập nhật"}</span>
         </div>
 
+        {/* DateOfBirth */}
         <div className="flex flex-col sm:flex-row sm:items-center gap-2">
           <span className="font-medium text-gray-400 w-32">Ngày sinh:</span>
           <span className="text-white">
-            {user.birthday ? new Date(user.birthday).toLocaleDateString("vi-VN") : "Chưa cập nhật"}
+            {user.DateOfBirth
+              ? new Date(user.DateOfBirth).toLocaleDateString("vi-VN", {
+                year: "numeric",
+                month: "long",
+                day: "numeric",
+              })
+              : "Không rõ"}
           </span>
         </div>
 
+        {/* Bio */}
         <div className="flex flex-col sm:flex-row gap-2">
           <span className="font-medium text-gray-400 w-32 flex-shrink-0">Tiểu sử:</span>
-          <span className="text-white leading-relaxed">
-            {user.bio || "Chưa có tiểu sử"}
-          </span>
+          <span className="text-white leading-relaxed">{user.Bio || "Chưa có tiểu sử"}</span>
         </div>
 
+        {/* CreatedAt */}
         <div className="flex flex-col sm:flex-row sm:items-center gap-2">
           <span className="font-medium text-gray-400 w-32">Tham gia:</span>
           <span className="text-white">
-            {new Date(user.createdAt).toLocaleDateString("vi-VN", {
-              year: "numeric",
-              month: "long",
-              day: "numeric",
-            })}
+            {user.CreatedAt
+              ? new Date(user.CreatedAt).toLocaleDateString("vi-VN", {
+                year: "numeric",
+                month: "long",
+                day: "numeric",
+              })
+              : "Không rõ"}
           </span>
         </div>
       </div>
-
-      {/* Nút chỉnh sửa - chỉ hiển thị khi là profile của chính mình */}
-      {isOwnProfile && (
-        <div className="mt-10 flex justify-center">
-          <button
-            onClick={() => setIsEditing(true)}
-            className="px-8 py-3 bg-[#3e4042] hover:bg-[#4a4c4f] active:bg-[#36383b]
-                       text-white font-semibold text-base rounded-2xl transition-all duration-200
-                       border border-gray-600 hover:border-gray-500"
-          >
-            Chỉnh sửa hồ sơ
-          </button>
-        </div>
-      )}
-
-      {/* Setting Form Modal */}
+      {/* Form chỉnh sửa */}
       {isEditing && (
-        <SettingForm 
-          user={user} 
-          onClose={() => setIsEditing(false)} 
-        />
+        <SettingForm user={user} onClose={() => setIsEditing(false)} />
       )}
     </div>
   );

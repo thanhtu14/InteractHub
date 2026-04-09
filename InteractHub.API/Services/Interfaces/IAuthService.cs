@@ -1,6 +1,6 @@
-using InteractHub.API.DTOs;
+using InteractHub.API.DTOs.Auth;
 
-namespace InteractHub.API.Services;
+namespace InteractHub.API.Services.Interfaces;
 
 public interface IAuthService
 {

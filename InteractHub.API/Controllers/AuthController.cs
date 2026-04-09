@@ -1,14 +1,14 @@
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
-using InteractHub.API.Data;
-using InteractHub.API.DTOs;
+using InteractHub.API.DTOs.Auth;
+using InteractHub.API.DTOs.User;
 using InteractHub.API.Entities;
-using InteractHub.API.Services;
+using InteractHub.API.Services.Interfaces;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 
 namespace InteractHub.API.Controllers;
@@ -17,22 +17,26 @@ namespace InteractHub.API.Controllers;
 [Route("api/auth")]
 public class AuthController : ControllerBase
 {
-    private readonly IAuthService  _authService;
-    private readonly AppDbContext  _db;
+    private readonly IAuthService _authService;
+    private readonly UserManager<User> _userManager;
     private readonly IConfiguration _config;
 
-    public AuthController(IAuthService authService, AppDbContext db, IConfiguration config)
+    public AuthController(
+        IAuthService authService,
+        UserManager<User> userManager,
+        IConfiguration config)
     {
         _authService = authService;
-        _db          = db;
-        _config      = config;
+        _userManager = userManager;
+        _config = config;
     }
 
-    // ── 1. Đăng ký & Đăng nhập truyền thống ──────────────────────
+    // ── 1. Register ──────────────────────────────────────────────
     [HttpPost("register")]
     public async Task<IActionResult> Register([FromBody] RegisterRequest request)
     {
         if (!ModelState.IsValid) return BadRequest(ModelState);
+
         try
         {
             var result = await _authService.RegisterAsync(request);
@@ -44,10 +48,12 @@ public class AuthController : ControllerBase
         }
     }
 
+    // ── 2. Login ────────────────────────────────────────────────
     [HttpPost("login")]
     public async Task<IActionResult> Login([FromBody] LoginRequest request)
     {
         if (!ModelState.IsValid) return BadRequest(ModelState);
+
         try
         {
             var result = await _authService.LoginAsync(request);
@@ -59,16 +65,16 @@ public class AuthController : ControllerBase
         }
     }
 
-    // ── 2. Google OAuth ─────────────────────────────────────────
+    // ── 3. Google OAuth ─────────────────────────────────────────
     [HttpGet("google")]
     public IActionResult GoogleLogin()
     {
         var properties = new AuthenticationProperties
         {
             RedirectUri = Url.Action(nameof(GoogleCallback)),
-            // Ép buộc Google hiển thị bảng chọn tài khoản
             Items = { { "prompt", "select_account" } }
         };
+
         return Challenge(properties, "Google");
     }
 
@@ -76,33 +82,32 @@ public class AuthController : ControllerBase
     public async Task<IActionResult> GoogleCallback()
     {
         var result = await HttpContext.AuthenticateAsync("Google");
-        
+
         if (!result.Succeeded)
             return Redirect("http://localhost:5173/login?error=google_failed");
 
-        var email    = result.Principal.FindFirstValue(ClaimTypes.Email) ?? "";
-        var fullName = result.Principal.FindFirstValue(ClaimTypes.Name)  ?? "";
-        // Lấy avatar từ các key phổ biến của Google
-        var avatar   = result.Principal.FindFirstValue("picture") 
-                       ?? result.Principal.FindFirstValue("urn:google:picture") 
-                       ?? "";
+        var email = result.Principal.FindFirstValue(ClaimTypes.Email) ?? "";
+        var fullName = result.Principal.FindFirstValue(ClaimTypes.Name) ?? "";
+        var avatar =
+            result.Principal.FindFirstValue("picture") ??
+            result.Principal.FindFirstValue("urn:google:picture") ??
+            "";
 
         return await HandleOAuthLogin(email, fullName, avatar);
     }
 
-    // ── 3. GitHub OAuth ─────────────────────────────────────────
+    // ── 4. GitHub OAuth ─────────────────────────────────────────
     [HttpGet("github")]
     public async Task<IActionResult> GitHubLogin()
     {
-        // Xóa session cũ của Middleware để đảm bảo không bị dính vết đăng nhập trước đó
         await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
 
         var properties = new AuthenticationProperties
         {
             RedirectUri = Url.Action(nameof(GitHubCallback)),
-            // Ép buộc hiển thị màn hình phê duyệt/chọn lại nếu có thể
             Items = { { "prompt", "select_account" } }
         };
+
         return Challenge(properties, "GitHub");
     }
 
@@ -110,83 +115,96 @@ public class AuthController : ControllerBase
     public async Task<IActionResult> GitHubCallback()
     {
         var result = await HttpContext.AuthenticateAsync("GitHub");
+
         if (!result.Succeeded)
             return Redirect("http://localhost:5173/login?error=github_failed");
 
-        var email    = result.Principal.FindFirstValue(ClaimTypes.Email);
-        var fullName = result.Principal.FindFirstValue(ClaimTypes.Name) 
-                       ?? result.Principal.FindFirstValue("login"); // Username GitHub
-        
-        var avatar   = result.Principal.FindFirstValue("urn:github:avatar_url") 
-                       ?? result.Principal.FindFirstValue("avatar_url") 
-                       ?? "";
+        var email = result.Principal.FindFirstValue(ClaimTypes.Email) ?? "";
+        var fullName =
+            result.Principal.FindFirstValue(ClaimTypes.Name) ??
+            result.Principal.FindFirstValue("login") ??
+            "";
 
-        return await HandleOAuthLogin(email ?? "", fullName ?? "", avatar);
+        var avatar =
+            result.Principal.FindFirstValue("urn:github:avatar_url") ??
+            result.Principal.FindFirstValue("avatar_url") ??
+            "";
+
+        return await HandleOAuthLogin(email, fullName, avatar);
     }
 
-    // ── 4. Xử lý logic chung cho OAuth ──────────────────────────
+    // ── 5. Handle OAuth chung ───────────────────────────────────
     private async Task<IActionResult> HandleOAuthLogin(string email, string fullName, string avatar)
     {
         if (string.IsNullOrEmpty(email))
             return Redirect("http://localhost:5173/login?error=no_email");
 
-        var user = await _db.Users.FirstOrDefaultAsync(u => u.Email == email);
-        
-        // Nếu chưa có user trong DB -> Tạo mới (Đăng ký tự động)
+        var user = await _userManager.FindByEmailAsync(email);
+
+        // 🔥 nếu chưa có user → tạo mới
         if (user == null)
         {
             user = new User
             {
-                FullName       = fullName,
-                Email           = email,
-                UserName       = email, 
+                Email = email,
+                UserName = email,
+                FullName = fullName,
                 ProfilePicture = avatar,
-                // Password ngẫu nhiên vì login qua Social
-                PasswordHash       = BCrypt.Net.BCrypt.HashPassword(Guid.NewGuid().ToString()), 
-                Status         = 1,
+                Status = 1
             };
-            _db.Users.Add(user);
-            await _db.SaveChangesAsync();
+
+            var result = await _userManager.CreateAsync(user);
+
+            if (!result.Succeeded)
+                return Redirect("http://localhost:5173/login?error=create_user_failed");
         }
 
-        var token = GenerateJwtToken(user);
-        
+        var roles = await _userManager.GetRolesAsync(user);
+        var token = GenerateJwtToken(user, roles);
+
         var userDto = new UserDto
         {
-            Id        = user.Id.ToString(),
-            Username  = user.FullName ?? user.UserName ?? "User",
-            Email     = user.Email    ?? "",
+            Id = user.Id,
+            Username = user.FullName ?? user.UserName ?? "User",
+            Email = user.Email ?? "",
             AvatarUrl = user.ProfilePicture,
-            Roles     = new List<string> { "User" },
+            Roles = roles.ToList()
         };
 
-        // Serialize và Encode để truyền qua URL an toàn
-        var userJson = Uri.EscapeDataString(System.Text.Json.JsonSerializer.Serialize(userDto));
-        
+        var userJson = Uri.EscapeDataString(
+            System.Text.Json.JsonSerializer.Serialize(userDto)
+        );
+
         return Redirect($"http://localhost:5173/oauth-callback?token={token}&user={userJson}");
     }
 
-    private string GenerateJwtToken(User user)
+    // ── 6. Generate JWT ─────────────────────────────────────────
+    private string GenerateJwtToken(User user, IList<string> roles)
     {
         var jwtSettings = _config.GetSection("JwtSettings");
-        var secretKey = jwtSettings["SecretKey"] ?? throw new InvalidOperationException("JWT SecretKey is missing");
+        var secretKey = jwtSettings["SecretKey"]!;
 
         var claims = new List<Claim>
         {
-            new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
-            new Claim(ClaimTypes.Email,          user.Email    ?? ""),
-            new Claim(ClaimTypes.Name,           user.FullName ?? user.UserName ?? ""),
-            new Claim(ClaimTypes.Role,           "User"),
+            new Claim(ClaimTypes.NameIdentifier, user.Id),
+            new Claim(ClaimTypes.Email, user.Email ?? ""),
+            new Claim(ClaimTypes.Name, user.FullName ?? user.UserName ?? "")
         };
+
+        // 🔥 add roles
+        foreach (var role in roles)
+        {
+            claims.Add(new Claim(ClaimTypes.Role, role));
+        }
 
         var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secretKey));
         var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
 
         var token = new JwtSecurityToken(
-            issuer:             jwtSettings["Issuer"],
-            audience:           jwtSettings["Audience"],
-            claims:             claims,
-            expires:            DateTime.UtcNow.AddHours(24),
+            issuer: jwtSettings["Issuer"],
+            audience: jwtSettings["Audience"],
+            claims: claims,
+            expires: DateTime.UtcNow.AddHours(24),
             signingCredentials: creds
         );
 

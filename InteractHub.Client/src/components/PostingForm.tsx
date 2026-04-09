@@ -1,39 +1,58 @@
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { FaUserCircle, FaVideo, FaImage, FaSmile } from "react-icons/fa";
 import PostModal from "./PostModal";
 
 interface PostingFormProps {
-  user?: any;
+  user?: any;           // User truyền từ Profile (ưu tiên cao)
   variant?: "home" | "profile";
 }
 
-const PostingForm = ({ user, variant = "home" }: PostingFormProps) => {
+const API_BASE_URL = "https://localhost:7069";
+
+// Hàm resolveUrl giống hệt file ProfileHeader
+const resolveUrl = (path?: string | null): string => {
+  if (!path) return "";
+  if (path.startsWith("http")) return path;
+  return `${API_BASE_URL}${path}`;
+};
+
+const PostingForm: React.FC<PostingFormProps> = ({ user, variant = "home" }) => {
   const [showForm, setShowForm] = useState(false);
   const [currentUser, setCurrentUser] = useState<any>(null);
 
+  // Chỉ lấy từ localStorage khi KHÔNG có user từ prop (dùng cho trang Home)
   useEffect(() => {
-    const storedUser = localStorage.getItem("user");
+    if (user) return;
+
+    const storedUser = localStorage.getItem("interact_hub_user");
     if (storedUser) {
-      setCurrentUser(JSON.parse(storedUser));
+      try {
+        setCurrentUser(JSON.parse(storedUser));
+      } catch (error) {
+        console.error("Lỗi parse user từ localStorage:", error);
+      }
     }
-  }, []);
+  }, [user]);
+
+  // Ưu tiên user từ prop (Profile) > user từ localStorage (Home)
+  const displayUser = user || currentUser;
 
   return (
     <div
-      className={`bg-[#242526] border border-[#3e4042] rounded-3xl p-4 shadow-xl
+      className={`bg-[#242526] border border-[#3e4042] rounded-3xl p-5 shadow-xl
         ${variant === "profile" ? "w-full" : "max-w-2xl mx-auto"}`}
     >
       {/* Phần nhập bài viết */}
       <div className="flex items-center gap-4">
-        {/* Avatar */}
+        {/* Avatar - Học theo style ProfileHeader */}
         <div className="flex-shrink-0">
-          {currentUser?.avatarUrl ? (
+          {displayUser?.AvatarUrl ? (
             <img
-              src={`http://localhost:8080/uploads/${currentUser.avatarUrl}`}
+              src={resolveUrl(displayUser.AvatarUrl)}
               alt="avatar"
-              className="w-11 h-11 rounded-full object-cover ring-2 ring-gray-700"
+              className="w-11 h-11 rounded-full object-cover ring-2 ring-gray-700 hover:ring-[#1877f2] transition-all"
               onError={(e) => {
-                e.currentTarget.src = "/assets/img/icons8-user-default-64.png";
+                (e.currentTarget as HTMLImageElement).src = "/images/default-avatar.png";
               }}
             />
           ) : (
@@ -45,11 +64,11 @@ const PostingForm = ({ user, variant = "home" }: PostingFormProps) => {
         <button
           onClick={() => setShowForm(true)}
           className="flex-1 bg-[#3a3b3c] hover:bg-[#4a4b4d] text-left text-gray-300 
-                     text-[17px] py-3 px-5 rounded-full transition-all duration-200
-                     focus:outline-none focus:ring-2 focus:ring-blue-500"
+                     text-[17px] py-3.5 px-5 rounded-full transition-all duration-200
+                     focus:outline-none focus:ring-2 focus:ring-[#1877f2] active:scale-[0.985]"
         >
-          {currentUser?.fullName 
-            ? `${currentUser.fullName} ơi, bạn đang nghĩ gì thế?` 
+          {displayUser?.Username || displayUser?.fullName
+            ? `${displayUser.Username || displayUser.fullName} ơi, bạn đang nghĩ gì thế?`
             : "Bạn đang nghĩ gì thế?"}
         </button>
       </div>
@@ -59,31 +78,33 @@ const PostingForm = ({ user, variant = "home" }: PostingFormProps) => {
 
       {/* Các nút chức năng */}
       <div className="grid grid-cols-3 gap-2">
-        <button className="flex items-center justify-center gap-3 py-3 hover:bg-[#3a3b3c] rounded-2xl transition-all text-gray-300">
-          <FaVideo className="text-red-500" size={24} />
-          <span className="font-medium text-sm">Video trực tiếp</span>
-        </button>
-
-        <button className="flex items-center justify-center gap-3 py-3 hover:bg-[#3a3b3c] rounded-2xl transition-all text-gray-300">
-          <FaImage className="text-green-500" size={24} />
-          <span className="font-medium text-sm">Ảnh/Video</span>
-        </button>
-
-        <button className="flex items-center justify-center gap-3 py-3 hover:bg-[#3a3b3c] rounded-2xl transition-all text-gray-300">
-          <FaSmile className="text-orange-500" size={24} />
-          <span className="font-medium text-sm">Cảm xúc/Hoạt động</span>
-        </button>
+        <ActionButton icon={<FaVideo className="text-red-500" />} label="Video trực tiếp" />
+        <ActionButton icon={<FaImage className="text-green-500" />} label="Ảnh/Video" />
+        <ActionButton icon={<FaSmile className="text-orange-500" />} label="Cảm xúc/Hoạt động" />
       </div>
 
       {/* Post Modal */}
       {showForm && (
         <PostModal 
-          user={user || currentUser} 
+          user={displayUser} 
           onClose={() => setShowForm(false)} 
         />
       )}
     </div>
   );
 };
+
+// Component nút chức năng
+const ActionButton = ({ icon, label }: { icon: React.ReactNode; label: string }) => (
+  <button
+    className="flex items-center justify-center gap-3 py-3.5 hover:bg-[#3a3b3c] 
+               rounded-2xl transition-all duration-200 text-gray-300 hover:text-white group"
+  >
+    <div className="group-hover:scale-110 transition-transform duration-200">
+      {icon}
+    </div>
+    <span className="font-medium text-sm">{label}</span>
+  </button>
+);
 
 export default PostingForm;

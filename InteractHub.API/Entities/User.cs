@@ -21,6 +21,10 @@ public class User : IdentityUser  // Kế thừa IdentityUser
 
     public int Status { get; set; } = 1; // 1: Active, 0: Banned
 
+    public string? CoverUrl { get; set; }   // ← thêm mới
+
+    [MaxLength(10)]
+    public string? Gender { get; set; } // "Male", "Female", "Other"
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
     // ===== Navigation =====

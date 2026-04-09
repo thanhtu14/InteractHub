@@ -5,7 +5,7 @@ import axios from "axios";
 import LoginForm from "../components/FormLogin";
 import FormRegister from "../components/FormRegister";
 import ForgotPassword from "../components/ForgotPassword"; // Import component mới
-import useAuth from "../context/useAuth";
+import { useAuth } from "../context/useAuth";
 import { loginAPI, registerAPI } from "../services/authService";
 
 import type { LoginFormData } from "../schemas/auth.schema";
@@ -26,7 +26,7 @@ const LoginPage = () => {
     setErrorMessage("");
     try {
       const res = await loginAPI(formData.email, formData.password);
-      login(res.data.user, res.data.token);
+      login(res.data.User, res.data.Token);
       navigate("/homepage");
     } catch (error: unknown) {
       if (axios.isAxiosError(error)) {

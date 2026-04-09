@@ -38,6 +38,7 @@
 
 import { UserRoutes } from "./routes/UserRoute";
 import { AdminRoutes } from "./routes/AdminRoute";
+import LoginRoute from "./components/LoginRoute";
 
 import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
 import Login from "./pages/login";
@@ -48,7 +49,7 @@ function App() {
     <Router>
       <Routes>
         <Route path="/" element={<Navigate to="/login" />} />
-        <Route path="/login" element={<Login />} />
+        <Route path="/login" element={<LoginRoute><Login /></LoginRoute>} />
         <Route path="/oauth-callback" element={<OAuthCallbackPage />} />
         {UserRoutes}
         {AdminRoutes}

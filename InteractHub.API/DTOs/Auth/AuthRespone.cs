@@ -1,4 +1,6 @@
-namespace InteractHub.API.DTOs;
+using InteractHub.API.DTOs.User;
+
+namespace InteractHub.API.DTOs.Auth;
 
 public class AuthResponse
 {

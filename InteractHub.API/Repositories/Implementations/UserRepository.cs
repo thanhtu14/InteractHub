@@ -1,8 +1,9 @@
 using InteractHub.API.Data;
 using InteractHub.API.Entities;
 using Microsoft.EntityFrameworkCore;
+using InteractHub.API.Repositories.Interfaces;
 
-namespace InteractHub.API.Repositories;
+namespace InteractHub.API.Repositories.Implementations;
 
 public class UserRepository : IUserRepository
 {
@@ -34,4 +35,9 @@ public class UserRepository : IUserRepository
         await _db.SaveChangesAsync();
         return user;
     }
+    public async Task<User?> GetByIdAsync(string id)
+{
+    return await _db.Users
+        .FirstOrDefaultAsync(u => u.Id == id);
+}
 }

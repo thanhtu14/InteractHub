@@ -1,12 +1,15 @@
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
-using InteractHub.API.DTOs;
+using InteractHub.API.DTOs.Auth;
+using InteractHub.API.DTOs.User;
 using InteractHub.API.Entities;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.IdentityModel.Tokens;
+using InteractHub.API.Services.Interfaces;
 
-namespace InteractHub.API.Services;
+
+namespace InteractHub.API.Services.Implementations;
 
 public class AuthService : IAuthService
 {

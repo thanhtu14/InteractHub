@@ -11,10 +11,13 @@ import { useNavigate } from "react-router-dom";
 import axios from "axios";
 
 interface User {
-  id: string | number;
-  username?: string;
-  fullName?: string;
-  avatarUrl?: string;
+  Id: string;           // C# dùng string (GUID) và viết hoa chữ I
+  Username: string;     // Thay vì username
+  FullName?: string;    // Nếu BE có trả về FullName
+  AvatarUrl?: string;   // Viết hoa chữ A và U
+  Email?: string;
+  Phone?: string;
+  Bio?: string;
 }
 
 interface NavbarProps {
@@ -148,35 +151,35 @@ const Navbar = ({ user: propUser, onChatClick, onNotifyClick }: NavbarProps) => 
                 ) : results.length > 0 ? (
                   results.map((u) => (
                     <div
-                      key={u.id}
+                      key={u.Id}
                       className="px-4 py-3 hover:bg-[#3a3b3c] flex items-center gap-3 cursor-pointer group"
                     >
                       <img
                         src={
-                          u.avatarUrl
-                            ? `http://localhost:8080/uploads/${u.avatarUrl}`
+                          u.AvatarUrl
+                            ? `http://localhost:8080/uploads/${u.AvatarUrl}`
                             : "/assets/img/icons8-user-default-64.png"
                         }
-                        alt={u.fullName}
+                        alt={u.FullName}
                         className="w-10 h-10 rounded-full object-cover"
-                        onClick={() => goToProfile(u.id)}
+                        onClick={() => goToProfile(u.Id)}
                       />
                       <div
                         className="flex-1 text-white"
-                        onClick={() => goToProfile(u.id)}
+                        onClick={() => goToProfile(u.Id)}
                       >
                         <p className="font-medium group-hover:text-blue-400 transition-colors">
-                          {u.fullName}
+                          {u.FullName}
                         </p>
-                        {u.username && (
-                          <p className="text-sm text-gray-400">@{u.username}</p>
+                        {u.Username && (
+                          <p className="text-sm text-gray-400">@{u.Username}</p>
                         )}
                       </div>
-                      {u.id !== currentUser.id && (
+                      {u.Id !== currentUser.id && (
                         <button
                           onClick={(e) => {
                             e.stopPropagation();
-                            handleSendFriendRequest(u.id);
+                            handleSendFriendRequest(u.Id);
                           }}
                           className="px-4 py-1.5 bg-blue-600 hover:bg-blue-700 text-white
                                      text-sm font-medium rounded-xl transition-colors"
