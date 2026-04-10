@@ -22,7 +22,10 @@ const PostingForm: React.FC<PostingFormProps> = ({ user, variant = "home" }) => 
 
   // Chỉ lấy từ localStorage khi KHÔNG có user từ prop (dùng cho trang Home)
   useEffect(() => {
-    if (user) return;
+    if (user){
+      console.log(user)
+      return;
+    } 
 
     const storedUser = localStorage.getItem("interact_hub_user");
     if (storedUser) {
@@ -69,12 +72,12 @@ const PostingForm: React.FC<PostingFormProps> = ({ user, variant = "home" }) => 
         >
           {(() => {
             const name = displayUser?.Username || displayUser?.fullName;
-            if (!name) return "Bạn đang nghĩ gì thế?";
+            if (!name) return "Bạn đang nghĩ gì?";
 
             // Logic cắt chữ cuối: Trim khoảng trắng -> Cắt mảng -> Lấy phần tử cuối
             const lastName = name.trim().split(" ").pop();
 
-            return `${lastName} ơi, bạn đang nghĩ gì thế?`;
+            return `${lastName} ơi, bạn đang nghĩ gì?`;
           })()}
         </button>
       </div>

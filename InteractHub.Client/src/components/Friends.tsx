@@ -1,81 +1,74 @@
+import React from "react";
 import { FaMessage } from "react-icons/fa6";
-import { FaUser } from "react-icons/fa";
 import { useNavigate } from "react-router-dom";
 
 interface FriendProps {
   friend: {
-    id?: string | number;
+    id: string | number;
     fullName: string;
-    avatarUrl?: string;
+    avatarUrl?: string | null;
   };
 }
 
-const Friend = ({ friend }: FriendProps) => {
+// Định nghĩa Base URL giống như ProfileHeader của bạn
+const SERVER_BASE_URL = "https://localhost:7069";
+
+// Sử dụng chung logic resolveUrl để đồng bộ hiển thị ảnh
+const resolveUrl = (path?: string | null): string | undefined => {
+  if (!path) return undefined;
+  if (path.startsWith("http")) return path;
+  return `${SERVER_BASE_URL}${path}`;
+};
+
+const Friend: React.FC<FriendProps> = ({ friend }) => {
   const navigate = useNavigate();
+
+  const handleGoToProfile = () => {
+    navigate(`/profile/${friend.id}`);
+  };
 
   return (
     <div
-      className="group flex items-center gap-4 p-4 bg-[#1a1a1a] hover:bg-[#242526]
-                 rounded-2xl transition-all duration-300 cursor-pointer
-                 border border-gray-800 hover:border-[#3e4042]"
+      onClick={handleGoToProfile}
+      className="group flex items-center gap-3 p-2 hover:bg-[#3a3b3c] 
+                 rounded-xl transition-all duration-200 cursor-pointer"
     >
-      {/* Avatar */}
+      {/* Avatar Section */}
       <div className="relative flex-shrink-0">
         <img
-          src={
-            friend.avatarUrl
-              ? `http://localhost:8080/uploads/${friend.avatarUrl}`
-              : "/assets/img/icons8-user-default-64.png"
-          }
+          // Sử dụng resolveUrl và ảnh mặc định giống ProfileHeader
+          src={resolveUrl(friend.avatarUrl) || "/images/default-avatar.png"}
           alt={friend.fullName}
-          className="w-14 h-14 rounded-full object-cover ring-2 ring-transparent
-                     group-hover:ring-logocolor transition-all duration-300"
+          className="w-15 h-15 rounded-full object-cover border border-gray-700 
+                     group-hover:border-gray-500 transition-all"
         />
+        {/* Status dot: Chấm xanh online */}
+        <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 border-2 border-[#18191a] rounded-full"></div>
       </div>
 
-      {/* Tên + trạng thái */}
+      {/* Info Section */}
       <div className="flex-1 min-w-0">
-        <p className="text-white font-semibold text-[17px] truncate
-                      group-hover:text-logocolor transition-colors">
+        <p className="text-[16px] font-medium text-white truncate">
           {friend.fullName}
         </p>
-        <p className="text-gray-500 text-sm mt-0.5">Bạn bè</p>
+        <p className="text-[14px] text-gray-400">Bạn bè</p>
       </div>
 
-      {/* Các nút — chỉ hiện khi hover vào card */}
-      <div className="flex items-center gap-2
-                      opacity-0 group-hover:opacity-100
-                      translate-x-2 group-hover:translate-x-0
-                      transition-all duration-200">
-
-        {/* Nút nhắn tin */}
+      {/* Hover Actions */}
+      <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-all duration-200">
         <button
-          title={`Nhắn tin với ${friend.fullName}`}
+          title="Nhắn tin"
           onClick={(e) => {
             e.stopPropagation();
-            alert(`Nhắn tin với ${friend.fullName}`);
+            // Logic mở chat box của bạn ở đây
           }}
-          className="w-9 h-9 flex items-center justify-center
-                     bg-[#3a3b3c] hover:bg-logocolor text-white
-                     rounded-xl transition-all duration-200 shadow-sm"
+          className="w-10 h-10 flex items-center justify-center bg-[#4e4f50] 
+                     hover:bg-[#5e5f61] text-white rounded-full transition-colors"
         >
-          <FaMessage size={15} />
+          <FaMessage size={12} />
         </button>
 
-        {/* Nút xem trang cá nhân */}
-        <button
-          title={`Xem trang cá nhân của ${friend.fullName}`}
-          onClick={(e) => {
-            e.stopPropagation();
-            navigate(`/profile/${friend.id}`);
-          }}
-          className="w-9 h-9 flex items-center justify-center
-                     bg-[#3a3b3c] hover:bg-logocolor text-white
-                     rounded-xl transition-all duration-200 shadow-sm"
-        >
-          <FaUser size={15} />
-        </button>
-
+        
       </div>
     </div>
   );

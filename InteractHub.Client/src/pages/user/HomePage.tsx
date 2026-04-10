@@ -15,11 +15,20 @@ interface User {
 }
 
 const HomePage: React.FC = () => {
-  const [user] = useState<User>({
-    id: 1,
-    fullName: "Bùi Gia Quang Vinh",
-    avatarUrl: "https://i.pravatar.cc/150?u=vinh",
-  });
+  const [user] = useState<User | null>(() => {
+      const storedUser = localStorage.getItem("interact_hub_user");
+      if (storedUser) {
+        try {
+          return JSON.parse(storedUser) as User;
+        } catch (err) {
+          console.error("Lỗi khi parse user từ localStorage", err);
+          localStorage.removeItem("user");
+          return null;
+        }
+      }
+      return null;
+    });
+  
 
   const [rightSidebarView, setRightSidebarView] = useState<
     "friends" | "notifications" | "closed"
@@ -56,7 +65,7 @@ const HomePage: React.FC = () => {
           className={`
             hidden lg:flex flex-col h-full overflow-y-auto no-scrollbar bg-[#18191a]
             transition-all duration-300 ease-in-out
-            ${isOpen ? "w-[460px]" : "flex-1 max-w-[520px]"}
+            ${isOpen ? "w-[360px]" : "flex-1 max-w-[420px]"}
           `}
         >
           <div className="space-y-4">
@@ -92,12 +101,12 @@ const HomePage: React.FC = () => {
           className={`
             hidden xl:flex flex-col h-full bg-[#18191a] border-l border-gray-800/30
             transition-all duration-300 ease-in-out overflow-hidden flex-shrink-0
-            ${isOpen ? "w-[360px]" : "w-12"}
+            ${isOpen ? "w-[340px]" : "w-12"}
           `}
         >
           {isOpen ? (
             /* ── TRẠNG THÁI MỞ ── */
-            <div className="flex flex-col h-full w-[360px]">
+            <div className="flex flex-col h-full w-[340px]">
               <div className="flex justify-start px-3 pt-3 flex-shrink-0">
                 <button
                   onClick={() => setRightSidebarView("closed")}

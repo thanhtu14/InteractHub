@@ -1,14 +1,16 @@
 import { useEffect, useState } from "react";
 import Friend from "./Friends";
+import { friendshipService } from "../services/friendshipService";
 
 interface FriendType {
-  id: string | number;
+  id: string;
   fullName: string;
   avatarUrl?: string;
 }
 
-// 🔥 Hàm bỏ dấu tiếng Việt
-const removeVietnameseTones = (str: string) => {
+// 🔥 Hàm bỏ dấu tiếng Việt - Đã thêm check null/undefined để tránh lỗi normalize
+const removeVietnameseTones = (str: string | undefined | null) => {
+  if (!str) return "";
   return str
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "")
@@ -23,102 +25,81 @@ const FriendList = () => {
   const [loading, setLoading] = useState(true);
   const [keyword, setKeyword] = useState("");
 
-  // 🔥 MOCK DATA (xóa khi có BE)
+  // Lấy ID người dùng từ localStorage hoặc ID mặc định
+  const user = JSON.parse(localStorage.getItem("interact_hub_user") || "{}");
+  const currentUserId = user?.Id || "859ec493-a205-4b84-8681-8e0507090a0e";
+
   useEffect(() => {
-    const timer = setTimeout(() => {
-      setFriends([
-        { id: 1, fullName: "Nguyễn Văn A", avatarUrl: "https://i.pravatar.cc/150?u=1" },
-        { id: 2, fullName: "Trần Thị B", avatarUrl: "https://i.pravatar.cc/150?u=2" },
-        { id: 3, fullName: "Lê Văn C", avatarUrl: "https://i.pravatar.cc/150?u=3" },
-        { id: 4, fullName: "Phạm Minh D", avatarUrl: "https://i.pravatar.cc/150?u=4" },
-        { id: 5, fullName: "Hoàng Thị E", avatarUrl: "https://i.pravatar.cc/150?u=5" },
-        { id: 6, fullName: "Hoàng Thị F", avatarUrl: "https://i.pravatar.cc/150?u=6" },
-        { id: 7, fullName: "Hoàng Thị G", avatarUrl: "https://i.pravatar.cc/150?u=7" },
-        { id: 8, fullName: "Đặng Văn F", avatarUrl: "https://i.pravatar.cc/150?u=8" },
-        { id: 9, fullName: "Bùi Gia Quang Vinh", avatarUrl: "https://i.pravatar.cc/150?u=vinh" },
-      ]);
-      setLoading(false);
-    }, 800);
+    const fetchFriends = async () => {
+      try {
+        setLoading(true);
+        const res = await friendshipService.getFriendsList(currentUserId);
+        
+        // ✅ Mapping dữ liệu từ PascalCase (Backend) sang camelCase (Frontend)
+        const formattedData = res.data.map((item: any) => ({
+          id: item.Id,               // C# trả về "Id"
+          fullName: item.Username || "Người dùng", // C# trả về "Username"
+          avatarUrl: item.AvatarUrl  // C# trả về "AvatarUrl"
+        }));
 
-    return () => clearTimeout(timer);
-  }, []);
+        setFriends(formattedData);
+      } catch (error) {
+        console.error("Lỗi khi tải danh sách bạn bè:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
 
-  // 🔥 FILTER KHÔNG DẤU
+    if (currentUserId) fetchFriends();
+  }, [currentUserId]);
+
+  // 🔥 Filter an toàn
   const filteredFriends = friends.filter((f) =>
-    removeVietnameseTones(f.fullName).includes(
-      removeVietnameseTones(keyword)
-    )
+    removeVietnameseTones(f.fullName).includes(removeVietnameseTones(keyword))
   );
 
   return (
-    <div className="flex flex-col h-full">
-
-      {/* HEADER + SEARCH */}
-      <div className="sticky top-0 z-10 flex-shrink-0 bg-[#18191a] px-4 pt-4 pb-3">
-
-        {/* Title */}
-        <div className="flex items-center justify-between mb-3">
-          <h2 className="text-[17px] font-semibold text-gray-400 uppercase tracking-wider">
-            Bạn bè
+    <div className="flex flex-col h-full bg-[#18191a] text-white">
+      {/* Search Header */}
+      <div className="p-4 sticky top-0 bg-[#18191a] z-10">
+        <div className="flex justify-between items-center mb-4">
+          <h2 className="text-gray-400 font-bold uppercase text-xs tracking-widest">
+            Người liên hệ
           </h2>
-
-          {!loading && (
-            <span className="text-[12px] text-gray-500 font-medium">
-              {friends.length} trực tuyến
-            </span>
-          )}
+          <span className="text-[11px] bg-green-500/10 text-green-500 px-2 py-0.5 rounded-full">
+            {friends.length} bạn bè
+          </span>
         </div>
-
-        {/* 🔍 Search */}
+        
         <div className="relative">
           <input
             type="text"
-            placeholder="Tìm bạn bè..."
+            placeholder="Tìm kiếm bạn bè..."
             value={keyword}
             onChange={(e) => setKeyword(e.target.value)}
-            className="w-full px-3 py-2 pl-9 rounded-lg bg-[#242526]
-                       text-sm text-white placeholder-gray-400
-                       outline-none border border-transparent
-                       focus:border-blue-500 transition"
+            className="w-full bg-[#3a3b3c] py-2 pl-10 pr-4 rounded-full text-sm outline-none focus:ring-1 focus:ring-blue-500 transition-all"
           />
-
-          {/* Icon */}
-          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm">
-            🔍
-          </span>
+          <span className="absolute left-3 top-2.5 text-gray-400 text-sm">🔍</span>
         </div>
       </div>
 
-      {/* LIST */}
-      <div className="flex-1 overflow-y-auto no-scrollbar px-2 pb-4">
-
-        {/* Loading */}
-        {loading && (
-          <div className="py-8 flex justify-center">
-            <div className="animate-spin rounded-full h-6 w-6 border-2
-                            border-blue-600 border-t-transparent" />
-          </div>
-        )}
-
-        {/* Empty */}
-        {!loading && filteredFriends.length === 0 && (
-          <div className="py-10 text-center px-4">
-            <div className="mx-auto w-16 h-16 bg-gray-800 rounded-full
-                            flex items-center justify-center mb-4 text-2xl">
-              🔍
+      {/* Friends Scroll Area */}
+      <div className="flex-1 overflow-y-auto px-2 no-scrollbar">
+        {loading ? (
+          // Skeleton Loading
+          [1, 2, 3, 4].map((i) => (
+            <div key={i} className="flex items-center gap-3 p-2 animate-pulse">
+              <div className="w-10 h-10 bg-[#3a3b3c] rounded-full" />
+              <div className="h-3 bg-[#3a3b3c] rounded w-24" />
             </div>
-            <p className="text-gray-400 text-sm">
-              Không tìm thấy bạn bè
-            </p>
-          </div>
-        )}
-
-        {/* List */}
-        {!loading && filteredFriends.length > 0 && (
-          <div className="space-y-1">
-            {filteredFriends.map((friend) => (
-              <Friend key={friend.id} friend={friend} />
-            ))}
+          ))
+        ) : filteredFriends.length > 0 ? (
+          filteredFriends.map((friend) => (
+            <Friend key={friend.id} friend={friend} />
+          ))
+        ) : (
+          <div className="text-center py-10 text-gray-500 text-sm">
+            Không tìm thấy kết quả nào
           </div>
         )}
       </div>

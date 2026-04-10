@@ -75,7 +75,7 @@ const StoryList: React.FC<StoryItemProps> = ({ user }) => {
       {/* 🔥 SCROLL CONTAINER */}
       <div
         ref={scrollRef}
-        className="flex gap-2.5 overflow-x-auto no-scrollbar py-2 px-10 scroll-smooth"
+        className="flex gap-2.5 overflow-x-auto no-scrollbar py-2 px-2 scroll-smooth"
       >
         {/* CREATE STORY */}
         <div className="w-40 h-62 flex-shrink-0 bg-[#242526] rounded-xl overflow-hidden shadow-lg border border-[#3e4042] group cursor-pointer relative">
