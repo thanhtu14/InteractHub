@@ -1,5 +1,5 @@
 using System.Security.Claims;
-using InteractHub.API.DTOs.User;
+using InteractHub.API.DTOs.Friendships;
 using InteractHub.API.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -18,22 +18,24 @@ public class FriendshipsController : ControllerBase
     }
 
     // ── 1. POST api/friendships/request ──────────────────────────
-    [HttpPost("request")]
+    [HttpPost("request/{receiverId}")]
     [Authorize]
-    public async Task<IActionResult> SendFriendRequest([FromBody] FriendRequestDto dto)
+    public async Task<IActionResult> SendFriendRequest(string receiverId)
     {
-        if (!ModelState.IsValid) return BadRequest(ModelState);
-
         var currentUserId = User.FindFirstValue(ClaimTypes.NameIdentifier);
         if (string.IsNullOrEmpty(currentUserId)) return Unauthorized();
 
-        if (currentUserId == dto.ReceiverId)
+        if (currentUserId == receiverId)
             return BadRequest(new { message = "Bạn không thể gửi lời mời kết bạn cho chính mình." });
 
         try
         {
-            // Gán RequesterId là người dùng hiện tại để đảm bảo tính bảo mật
-            dto.RequesterId = currentUserId;
+            var dto = new FriendRequestDto
+            {
+                RequesterId = currentUserId,
+                ReceiverId = receiverId
+            };
+
             var result = await _friendshipService.SendRequestAsync(dto);
             return Ok(result);
         }
@@ -49,6 +51,7 @@ public class FriendshipsController : ControllerBase
     public async Task<IActionResult> GetPendingRequests()
     {
         var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        Console.WriteLine("USER ID: " + userId);
         if (string.IsNullOrEmpty(userId)) return Unauthorized();
 
         try
@@ -101,7 +104,33 @@ public class FriendshipsController : ControllerBase
             return BadRequest(new { message = ex.Message });
         }
     }
+    [HttpGet("status/{otherUserId}")]
+    [Authorize]
+    public async Task<IActionResult> GetStatus(string otherUserId)
+    {
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (string.IsNullOrEmpty(userId)) return Unauthorized();
 
+        var result = await _friendshipService.GetFriendshipStatusAsync(userId, otherUserId);
+        return Ok(result);
+    }
+    [HttpDelete("cancel/{receiverId}")]
+    [Authorize]
+    public async Task<IActionResult> CancelRequest(string receiverId)
+    {
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (string.IsNullOrEmpty(userId)) return Unauthorized();
+
+        try
+        {
+            await _friendshipService.CancelRequestAsync(userId, receiverId);
+            return Ok(new { message = "Đã hủy lời mời." });
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+    }
     // ── 5. GET api/friendships/list/{userId} ──────────────────────
     [HttpGet("list/{userId}")]
     public async Task<IActionResult> GetFriendsList(string userId)
@@ -110,6 +139,23 @@ public class FriendshipsController : ControllerBase
         {
             var friends = await _friendshipService.GetFriendsListAsync(userId);
             return Ok(friends);
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+    }
+    [HttpDelete("reject/{requesterId}")]
+    [Authorize]
+    public async Task<IActionResult> RejectRequest(string requesterId)
+    {
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (string.IsNullOrEmpty(userId)) return Unauthorized();
+
+        try
+        {
+            await _friendshipService.RejectRequestAsync(userId, requesterId);
+            return Ok(new { message = "Đã từ chối lời mời." });
         }
         catch (Exception ex)
         {

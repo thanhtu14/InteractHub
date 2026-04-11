@@ -1,3 +1,4 @@
+using InteractHub.API.DTOs.Friendships;
 using InteractHub.API.DTOs.User;
 using InteractHub.API.Entities;
 using InteractHub.API.Repositories.Interfaces;
@@ -38,27 +39,39 @@ public class FriendshipService : IFriendshipService
         var requests = await _friendshipRepo.GetPendingRequestsAsync(userId);
         return requests.Select(MapToDto);
     }
-
-    public async Task<FriendshipResponseDto> RespondToRequestAsync(string userId, FriendshipResponseDto dto)
+    public async Task CancelRequestAsync(string userId, string receiverId)
     {
-        // Phải tìm đúng bản ghi mà userId hiện tại là người nhận (Receiver)
-        var friendship = await _friendshipRepo.GetFriendshipAsync(dto.RequesterId, userId);
+        var friendship = await _friendshipRepo.GetFriendshipAsync(userId, receiverId);
 
-        if (friendship == null || friendship.ReceiverId != userId)
-            throw new Exception("Không tìm thấy lời mời kết bạn.");
+        if (friendship == null || friendship.Status != 0)
+            throw new Exception("Không tìm thấy lời mời để hủy.");
 
-        if (dto.Status == 1) // Accept
-        {
-            friendship.Status = 1;
-        }
-        else // Decline hoặc khác
-        {
-            _friendshipRepo.Delete(friendship);
-        }
-
+        _friendshipRepo.Delete(friendship);
         await _friendshipRepo.SaveChangesAsync();
-        return MapToDto(friendship);
     }
+    public async Task<FriendshipResponseDto> RespondToRequestAsync(string userId, FriendshipResponseDto dto)
+{
+    // userId: Người đang login (Receiver)
+    // dto.RequesterId: ID người đã gửi lời mời
+    var friendship = await _friendshipRepo.GetFriendshipAsync(dto.RequesterId, userId);
+
+    if (friendship == null)
+        throw new Exception("Không tìm thấy lời mời kết bạn.");
+
+    if (dto.Status == 1) // Chấp nhận
+    {
+        friendship.Status = 1;
+        friendship.UpdatedAt = DateTime.UtcNow; // Cập nhật thời gian nếu có field này
+        _friendshipRepo.Update(friendship); // Đảm bảo gọi Update thay vì Add
+    }
+    else // Từ chối
+    {
+        _friendshipRepo.Delete(friendship);
+    }
+
+    await _friendshipRepo.SaveChangesAsync();
+    return MapToDto(friendship);
+}
 
     public async Task UnfriendAsync(string userId, string friendId)
     {
@@ -76,23 +89,53 @@ public class FriendshipService : IFriendshipService
         return friendships.Select(f =>
         {
             var friendUser = f.RequesterId == userId ? f.Receiver : f.Requester;
+
             return new UserDto
             {
-                Id = friendUser!.Id,
-                Username = friendUser.FullName ?? friendUser.UserName ?? "",
-                AvatarUrl = friendUser.ProfilePicture
+                Id = friendUser?.Id ?? "",
+                Username = friendUser?.FullName ?? friendUser?.UserName ?? "",
+                AvatarUrl = friendUser?.ProfilePicture ?? ""
             };
         });
+    }
+    public async Task<FriendshipStatusDto> GetFriendshipStatusAsync(string userId, string otherUserId)
+    {
+        // 🔥 FIX: check cả 2 chiều
+        var friendship = await _friendshipRepo.GetFriendshipBothAsync(userId, otherUserId);
+
+        if (friendship == null)
+        {
+            return new FriendshipStatusDto
+            {
+                status = null,
+                isRequester = false
+            };
+        }
+        return new FriendshipStatusDto
+        {
+            status = friendship?.Status,
+            isRequester = friendship?.RequesterId == userId
+        };
     }
 
     private static FriendshipResponseDto MapToDto(Friendship f) => new()
     {
-        RequesterId = f.RequesterId,
-        ReceiverId = f.ReceiverId,
+        RequesterId = f.RequesterId ?? "",
+        ReceiverId = f.ReceiverId ?? "",
         Status = f.Status,
         // Sử dụng toán tử điều kiện null (?) và giá trị mặc định (??)
         RequesterName = f.Requester?.FullName ?? "Unknown",
         AvatarUrl = f.Requester?.ProfilePicture ?? "",
         CreatedAt = f.CreatedAt
     };
+    public async Task RejectRequestAsync(string userId, string requesterId)
+    {
+        var friendship = await _friendshipRepo.GetFriendshipAsync(requesterId, userId);
+
+        if (friendship == null || friendship.Status != 0 || friendship.ReceiverId != userId)
+            throw new Exception("Không tìm thấy lời mời để từ chối.");
+
+        _friendshipRepo.Delete(friendship);
+        await _friendshipRepo.SaveChangesAsync();
+    }
 }

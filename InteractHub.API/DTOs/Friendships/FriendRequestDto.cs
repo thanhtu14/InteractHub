@@ -1,6 +1,5 @@
-using System;
 
-namespace InteractHub.API.DTOs.User;
+namespace InteractHub.API.DTOs.Friendships;
 
 public class FriendRequestDto
 {

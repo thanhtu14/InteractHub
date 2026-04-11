@@ -41,7 +41,8 @@ public class AuthService : IAuthService
             Email    = request.Email,
             UserName = request.Email,
             Status   = 1,
-            CreatedAt = DateTime.UtcNow
+            CreatedAt = DateTime.UtcNow,
+            ProfilePicture = "/images/avatars/default-avatar.png"
         };
 
         // Identity tự hash password, không cần BCrypt

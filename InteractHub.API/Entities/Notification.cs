@@ -4,6 +4,7 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace InteractHub.API.Entities;
 
+[Table("Notification")] // Đảm bảo mapping đúng tên bảng
 public class Notification
 {
     [Key]
@@ -15,7 +16,10 @@ public class Notification
 
     public string? Type { get; set; }
 
-    public bool? IsRead { get; set; }
+    // --- CỘT MỚI THÊM ---
+    public string? Link { get; set; } 
+
+    public bool? IsRead { get; set; } = false;
 
     public DateTime? CreatedAt { get; set; }
 

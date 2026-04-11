@@ -128,4 +128,5 @@ public class UsersController : ControllerBase
 
         return $"/images/{folder}/{fileName}";
     }
+    
 }

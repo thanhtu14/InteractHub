@@ -4,12 +4,14 @@ using InteractHub.API.Entities;
 
 namespace InteractHub.API.Data;
 
-public class AppDbContext : IdentityDbContext<User>  // DbContext → IdentityDbContext<User>
+public class AppDbContext : IdentityDbContext<User>
 {
     public AppDbContext(DbContextOptions<AppDbContext> options) : base(options) { }
 
-    // DbSet — bỏ DbSet<User> vì Identity tự quản lý
     public DbSet<Post> Posts { get; set; }
+    // --- THÊM DÒNG NÀY ---
+    public DbSet<PostMedia> PostMedias { get; set; } 
+    
     public DbSet<Story> Stories { get; set; }
     public DbSet<Like> Likes { get; set; }
     public DbSet<Comment> Comments { get; set; }
@@ -21,7 +23,19 @@ public class AppDbContext : IdentityDbContext<User>  // DbContext → IdentityDb
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
-        base.OnModelCreating(modelBuilder); // Bắt buộc gọi để Identity tạo bảng
+        base.OnModelCreating(modelBuilder); 
+
+        // --- Cấu hình tự động tạo ngày cho Post ---
+        modelBuilder.Entity<Post>()
+            .Property(p => p.CreatedAt)
+            .HasDefaultValueSql("GETDATE()");
+
+        // --- Cấu hình PostMedia (Quan hệ 1-N với Post) ---
+        modelBuilder.Entity<PostMedia>()
+            .HasOne(pm => pm.Post)
+            .WithMany(p => p.PostMedias)
+            .HasForeignKey(pm => pm.PostId)
+            .OnDelete(DeleteBehavior.Cascade); // Xóa Post thì xóa luôn Media
 
         // --- 1. Friendship ---
         modelBuilder.Entity<Friendship>()

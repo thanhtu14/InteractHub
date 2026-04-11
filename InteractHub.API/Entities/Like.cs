@@ -12,6 +12,7 @@ public class Like
     public string? UserId { get; set; }
 
     public int PostId { get; set; }
+    public string? Type { get; set; }
 
     public DateTime? CreatedAt { get; set; }
 

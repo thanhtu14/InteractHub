@@ -4,6 +4,7 @@ using InteractHub.API.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace InteractHub.API.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260411001349_UpdatePostAndAddMedia")]
+    partial class UpdatePostAndAddMedia
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -151,9 +154,6 @@ namespace InteractHub.API.Migrations
                     b.Property<bool?>("IsRead")
                         .HasColumnType("bit");
 
-                    b.Property<string>("Link")
-                        .HasColumnType("nvarchar(max)");
-
                     b.Property<string>("Message")
                         .HasColumnType("nvarchar(max)");
 
@@ -170,7 +170,7 @@ namespace InteractHub.API.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("Notification");
+                    b.ToTable("Notifications");
                 });
 
             modelBuilder.Entity("InteractHub.API.Entities.Post", b =>
@@ -185,9 +185,7 @@ namespace InteractHub.API.Migrations
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<DateTime?>("CreatedAt")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("datetime2")
-                        .HasDefaultValueSql("GETDATE()");
+                        .HasColumnType("datetime2");
 
                     b.Property<int?>("Status")
                         .HasColumnType("int");
@@ -203,31 +201,6 @@ namespace InteractHub.API.Migrations
                     b.HasIndex("UserId");
 
                     b.ToTable("Post");
-                });
-
-            modelBuilder.Entity("InteractHub.API.Entities.PostMedia", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<int>("MediaType")
-                        .HasColumnType("int");
-
-                    b.Property<int>("PostId")
-                        .HasColumnType("int");
-
-                    b.Property<string>("Url")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("PostId");
-
-                    b.ToTable("PostMedia");
                 });
 
             modelBuilder.Entity("InteractHub.API.Entities.PostReport", b =>
@@ -600,17 +573,6 @@ namespace InteractHub.API.Migrations
                     b.Navigation("User");
                 });
 
-            modelBuilder.Entity("InteractHub.API.Entities.PostMedia", b =>
-                {
-                    b.HasOne("InteractHub.API.Entities.Post", "Post")
-                        .WithMany("PostMedias")
-                        .HasForeignKey("PostId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Post");
-                });
-
             modelBuilder.Entity("InteractHub.API.Entities.PostReport", b =>
                 {
                     b.HasOne("InteractHub.API.Entities.Post", "Post")
@@ -718,8 +680,6 @@ namespace InteractHub.API.Migrations
                     b.Navigation("Comments");
 
                     b.Navigation("Likes");
-
-                    b.Navigation("PostMedias");
 
                     b.Navigation("Post_Hashtags");
 

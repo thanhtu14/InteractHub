@@ -1,3 +1,4 @@
+using InteractHub.API.DTOs.Friendships;
 using InteractHub.API.DTOs.User;
 
 namespace InteractHub.API.Services.Interfaces;
@@ -16,6 +17,9 @@ public interface IFriendshipService
     // Hủy kết bạn
     Task UnfriendAsync(string userId, string friendId);
 
+    Task<FriendshipStatusDto> GetFriendshipStatusAsync(string userId, string otherUserId);
+    Task CancelRequestAsync(string userId, string receiverId);
     // Lấy danh sách bạn bè của một người dùng
     Task<IEnumerable<UserDto>> GetFriendsListAsync(string userId);
+    Task RejectRequestAsync(string userId, string requesterId);
 }
