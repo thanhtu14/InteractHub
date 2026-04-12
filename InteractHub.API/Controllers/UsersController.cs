@@ -11,46 +11,40 @@ namespace InteractHub.API.Controllers;
 public class UsersController : ControllerBase
 {
     private readonly IUserService _userService;
-    private readonly IWebHostEnvironment _env;
+    private readonly IMediaService _mediaService; // Sử dụng Service đã tách
 
-    public UsersController(IUserService userService, IWebHostEnvironment env)
+    public UsersController(IUserService userService, IMediaService mediaService)
     {
         _userService = userService;
-        _env = env;
+        _mediaService = mediaService;
     }
 
-    // ── 1. GET api/users/me ──────────────────────────────────────
+    // ── 1. Lấy thông tin cá nhân ──────────────────────────────────
     [HttpGet("me")]
     [Authorize]
     public async Task<IActionResult> GetMyProfile()
     {
-        var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
         if (string.IsNullOrEmpty(userId)) return Unauthorized();
 
         var user = await _userService.GetMyProfileAsync(userId);
-        if (user == null) return NotFound();
-
-        return Ok(user);
+        return user == null ? NotFound() : Ok(user);
     }
 
-    // ── 2. GET api/users/{id} ────────────────────────────────────
+    // ── 2. Lấy thông tin user theo ID ────────────────────────────
     [HttpGet("{id}")]
     public async Task<IActionResult> GetUserById(string id)
     {
         var user = await _userService.GetByIdAsync(id);
-        if (user == null) return NotFound();
-
-        return Ok(user);
+        return user == null ? NotFound() : Ok(user);
     }
 
-    // ── 3. PUT api/users/update ──────────────────────────────────
+    // ── 3. Cập nhật Profile (không bao gồm ảnh) ──────────────────
     [HttpPut("update")]
     [Authorize]
     public async Task<IActionResult> UpdateProfile([FromBody] UpdateProfileDto dto)
     {
-        if (!ModelState.IsValid) return BadRequest(ModelState);
-
-        var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
         if (string.IsNullOrEmpty(userId)) return Unauthorized();
 
         try
@@ -64,69 +58,38 @@ public class UsersController : ControllerBase
         }
     }
 
-    // ── 4. POST api/users/upload-avatar ──────────────────────────
+    // ── 4. Upload Avatar ──────────────────────────────────────────
     [HttpPost("upload-avatar")]
     [Authorize]
     public async Task<IActionResult> UploadAvatar(IFormFile file)
     {
-        var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
         if (string.IsNullOrEmpty(userId)) return Unauthorized();
 
-        if (file == null)
-            return BadRequest(new { message = "Không tìm thấy file" });
-
-        var url = await SaveImageAsync(file, "avatars");
+        // Gọi MediaService để xử lý file
+        var url = await _mediaService.SaveFileAsync(file, "avatars");
+        
         if (url is null)
-            return BadRequest(new { message = "File không hợp lệ hoặc quá lớn (tối đa 5MB)." });
+            return BadRequest(new { message = "File không hợp lệ hoặc lỗi trong quá trình lưu." });
 
         await _userService.UpdateAvatarAsync(userId, url);
         return Ok(new { url });
     }
 
-    // ── 5. POST api/users/upload-cover ───────────────────────────
+    // ── 5. Upload Ảnh bìa (Cover) ─────────────────────────────────
     [HttpPost("upload-cover")]
     [Authorize]
     public async Task<IActionResult> UploadCover(IFormFile file)
     {
-        var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
         if (string.IsNullOrEmpty(userId)) return Unauthorized();
 
-        try
-        {
-            var url = await SaveImageAsync(file, "covers");
-            if (url is null)
-                return BadRequest(new { message = "File không hợp lệ hoặc quá lớn (tối đa 5MB)." });
+        var url = await _mediaService.SaveFileAsync(file, "covers");
+        
+        if (url is null)
+            return BadRequest(new { message = "File không hợp lệ hoặc lỗi trong quá trình lưu." });
 
-            await _userService.UpdateCoverAsync(userId, url);
-            return Ok(new { url });
-        }
-        catch (Exception ex)
-        {
-            return BadRequest(new { message = ex.Message });
-        }
+        await _userService.UpdateCoverAsync(userId, url);
+        return Ok(new { url });
     }
-
-    // ── Helper: lưu file vào wwwroot/images/{folder}/ ────────────
-    private async Task<string?> SaveImageAsync(IFormFile? file, string folder)
-    {
-        if (file is null || file.Length == 0) return null;
-
-        if (file.Length > 5 * 1024 * 1024) return null;
-
-        var allowed = new[] { "image/jpeg", "image/png", "image/webp", "image/gif" };
-        if (!allowed.Contains(file.ContentType.ToLower())) return null;
-
-        var uploadDir = Path.Combine(_env.WebRootPath, "images", folder);
-        Directory.CreateDirectory(uploadDir);
-
-        var ext = Path.GetExtension(file.FileName).ToLower();
-        var fileName = $"{Guid.NewGuid()}{ext}";
-        var filePath = Path.Combine(uploadDir, fileName);
-
-        await using var stream = new FileStream(filePath, FileMode.Create);
-        await file.CopyToAsync(stream);
-
-        return $"/images/{folder}/{fileName}";
-    }
-    
 }

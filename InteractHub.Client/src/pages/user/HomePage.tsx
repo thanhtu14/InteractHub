@@ -65,7 +65,7 @@ const HomePage: React.FC = () => {
           className={`
             hidden lg:flex flex-col h-full overflow-y-auto no-scrollbar bg-[#18191a]
             transition-all duration-300 ease-in-out
-            ${isOpen ? "w-[360px]" : "flex-1 max-w-[420px]"}
+            ${isOpen ? "w-[390px]" : "flex-1 max-w-[450px]"}
           `}
         >
           <div className="space-y-4">

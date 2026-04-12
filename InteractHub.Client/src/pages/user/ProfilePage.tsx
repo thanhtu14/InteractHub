@@ -5,26 +5,31 @@ import { FaTimes } from "react-icons/fa";
 // Components
 import Navbar from "../../components/Navigation";
 import ProfileHeader from "../../components/ProfileHeader";
-import ListFriendsByID from "../../components/ListFriendsByID";
+import FriendList from "../../components/ListFriends";
 import PostList from "../../components/ContainerPost";
 import InfoContainer from "../../components/InfoContainer";
 import ProfileUpdateForm from "../../components/Profileupdateform";
 import PostingForm from "../../components/PostingForm";
+import PostFilterBar, { type SortOrder, type StatusFilter } from "../../components/PostFilterBar";
+import PostManagerModal from "../../components/PostManagerModal";
 
 // Services & Types
 import { userService } from "../../services/userService";
-import type { User } from "../../schemas/user.schema"; 
+import type { User } from "../../schemas/user.schema";
 
 const ProfilePage: React.FC = () => {
   const [user, setUser] = useState<User | null>(null);
   const [loggedInUser, setLoggedInUser] = useState<User | null>(null);
   const [showModal, setShowModal] = useState(false);
+  const [showManager, setShowManager] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [sort, setSort] = useState<SortOrder>("newest");
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
 
   const navigate = useNavigate();
   const { id: paramId } = useParams();
 
-  // ── 1. Fetch dữ liệu thông qua Service ─────────────────────
+  // ── 1. Fetch dữ liệu ───────────────────────────────────────
   useEffect(() => {
     const fetchUserData = async () => {
       setLoading(true);
@@ -34,18 +39,15 @@ const ProfilePage: React.FC = () => {
 
         setUser(data);
 
-        // Nếu là trang của chính mình (không có paramId), cập nhật local storage
         if (!paramId) {
           setLoggedInUser(data);
           localStorage.setItem("interact_hub_user", JSON.stringify(data));
         } else {
-          // Nếu xem trang người khác, lấy thông tin mình từ storage để so sánh quyền
           const storedUser = localStorage.getItem("interact_hub_user");
           if (storedUser) setLoggedInUser(JSON.parse(storedUser));
         }
       } catch (err: any) {
         console.error("Lỗi fetch user profile:", err);
-        // Interceptor của axios thường đã handle 401, nhưng có thể check thêm ở đây
         if (err.response?.status === 401) navigate("/login");
       } finally {
         setLoading(false);
@@ -59,11 +61,10 @@ const ProfilePage: React.FC = () => {
   const handleSubmitSuccess = (updatedUser: User) => {
     setUser(updatedUser);
     setLoggedInUser(updatedUser);
-    // Đóng modal sau khi user kịp nhìn thấy thông báo thành công
     setTimeout(() => setShowModal(false), 1000);
   };
 
-  // ── 3. Trạng thái Loading ──────────────────────────────────
+  // ── 3. Loading ─────────────────────────────────────────────
   if (loading || !user) {
     return (
       <div className="min-h-screen bg-[#18191a] flex items-center justify-center">
@@ -72,7 +73,6 @@ const ProfilePage: React.FC = () => {
     );
   }
 
-  // Kiểm tra đây có phải trang cá nhân của người đang đăng nhập không
   const isOwnProfilePage = !paramId || user.Id === loggedInUser?.Id;
 
   return (
@@ -85,10 +85,10 @@ const ProfilePage: React.FC = () => {
         onEditProfileClick={() => setShowModal(true)}
       />
 
-      <main className="max-w-[1100px] mx-auto mt-4 px-4 pb-10">
+      <main className="max-w-[1200px] mx-auto mt-4 px-4 pb-10">
         <div className="flex flex-col lg:flex-row gap-5">
 
-          {/* CỘT TRÁI: Sidebar thông tin */}
+          {/* CỘT TRÁI */}
           <aside className="w-full lg:w-[40%] space-y-4">
             <div className="lg:sticky lg:top-20 space-y-4">
               <div className="bg-[#242526] p-4 rounded-xl border border-[#3e4042] shadow-sm">
@@ -96,19 +96,19 @@ const ProfilePage: React.FC = () => {
                 <p className="text-center text-gray-300 mb-4 italic">
                   {user.Bio || "Chưa có tiểu sử"}
                 </p>
-                <InfoContainer 
-                  user={user} 
-                  isOwnProfile={isOwnProfilePage} 
+                <InfoContainer
+                  user={user}
+                  isOwnProfile={isOwnProfilePage}
                 />
               </div>
 
               <div className="bg-[#242526] p-4 rounded-xl border border-[#3e4042] shadow-sm">
-                <ListFriendsByID userId={user.Id} />
+                <FriendList />
               </div>
             </div>
           </aside>
 
-          {/* CỘT PHẢI: Bài viết */}
+          {/* CỘT PHẢI */}
           <section className="w-full lg:w-[60%] space-y-4">
             {isOwnProfilePage && (
               <div className="px-2">
@@ -116,21 +116,28 @@ const ProfilePage: React.FC = () => {
               </div>
             )}
 
-            <div className="bg-[#242526] p-4 rounded-xl flex items-center justify-between border border-[#3e4042] shadow-sm">
-              <h3 className="text-lg font-bold">Bài viết</h3>
-            </div>
+            <PostFilterBar
+              sort={sort}
+              status={statusFilter}
+              onSortChange={setSort}
+              onStatusChange={setStatusFilter}
+              onManageClick={() => setShowManager(true)}
+            />
 
-            <PostList userId={user.Id} />
+            <PostList
+              userId={user.Id}
+              sort={sort}
+              statusFilter={statusFilter}
+            />
           </section>
         </div>
       </main>
 
-      {/* ── MODAL CHỈNH SỬA HỒ SƠ ── */}
+      {/* MODAL CHỈNH SỬA HỒ SƠ */}
       {showModal && (
         <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
-          <div className="bg-[#242526] rounded-3xl w-full max-w-5xl max-h-[95vh] overflow-hidden relative shadow-2xl border border-[#3e4042] flex flex-col">
-            
-            {/* Modal Header */}
+          <div className="bg-[#242526] rounded-3xl w-full max-w-5xl max-h-[95vh] overflow-hidden
+                          relative shadow-2xl border border-[#3e4042] flex flex-col">
             <div className="flex items-center justify-between p-5 border-b border-[#3e4042] shrink-0">
               <h2 className="text-2xl font-bold text-white">Chỉnh sửa trang cá nhân</h2>
               <button
@@ -140,8 +147,6 @@ const ProfilePage: React.FC = () => {
                 <FaTimes size={20} />
               </button>
             </div>
-
-            {/* Modal Body */}
             <div className="flex-1 overflow-y-auto p-4 md:p-8 bg-[#1c1d1e]">
               <ProfileUpdateForm
                 initialData={user}
@@ -151,6 +156,14 @@ const ProfilePage: React.FC = () => {
             </div>
           </div>
         </div>
+      )}
+
+      {/* MODAL QUẢN LÝ BÀI VIẾT */}
+      {showManager && (
+        <PostManagerModal
+          userId={user.Id}
+          onClose={() => setShowManager(false)}
+        />
       )}
     </div>
   );

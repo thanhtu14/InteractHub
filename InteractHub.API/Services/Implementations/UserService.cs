@@ -8,10 +8,12 @@ namespace InteractHub.API.Services.Implementations;
 public class UserService : IUserService
 {
     private readonly UserManager<User> _userManager;
+    private readonly INotificationService _notificationService; // Inject Service thông báo
 
-    public UserService(UserManager<User> userManager)
+    public UserService(UserManager<User> userManager, INotificationService notificationService)
     {
         _userManager = userManager;
+        _notificationService = notificationService;
     }
 
     // ── GET BY ID ─────────────────────────────────────────────
@@ -37,7 +39,7 @@ public class UserService : IUserService
             throw new Exception("Người dùng không tồn tại.");
 
         // 1. Cập nhật thông tin cơ bản
-        user.FullName    = dto.Username;
+        user.FullName    = dto.UserName;
         user.PhoneNumber = dto.Phone;
         user.DateOfBirth = dto.DateOfBirth;
         user.Bio         = dto.Bio;
@@ -50,6 +52,9 @@ public class UserService : IUserService
         if (!updateResult.Succeeded)
             throw new Exception(string.Join(", ", updateResult.Errors.Select(e => e.Description)));
 
+        // Thông báo cập nhật profile thành công (Tùy chọn)
+        // await _notificationService.CreateNotificationAsync(userId, "Thông tin cá nhân của bạn đã được cập nhật.", "SYSTEM", "/profile/me");
+
         // 2. Đổi mật khẩu — chỉ xử lý khi người dùng điền NewPassword
         if (!string.IsNullOrWhiteSpace(dto.NewPassword))
         {
@@ -59,12 +64,14 @@ public class UserService : IUserService
             if (dto.NewPassword != dto.ConfirmNewPassword)
                 throw new Exception("Mật khẩu xác nhận không khớp.");
 
-            // Identity tự kiểm tra password cũ và hash mật khẩu mới
             var passwordResult = await _userManager.ChangePasswordAsync(
                 user, dto.CurrentPassword, dto.NewPassword);
 
             if (!passwordResult.Succeeded)
                 throw new Exception(string.Join(", ", passwordResult.Errors.Select(e => e.Description)));
+
+            // --- THÔNG BÁO BẢO MẬT ---
+            await _notificationService.CreateNotificationAsync(userId, "Mật khẩu của bạn đã được thay đổi thành công.", "SECURITY", "/profile/settings");
         }
 
         return MapToDto(user);
@@ -82,6 +89,9 @@ public class UserService : IUserService
         var result = await _userManager.UpdateAsync(user);
         if (!result.Succeeded)
             throw new Exception(string.Join(", ", result.Errors.Select(e => e.Description)));
+
+        // --- THÔNG BÁO CẬP NHẬT ẢNH ĐẠI DIỆN ---
+        // await _notificationService.CreateNotificationAsync(userId, "Ảnh đại diện của bạn đã được cập nhật.", "SYSTEM", "/profile/me");
     }
 
     // ── UPDATE COVER ──────────────────────────────────────────
@@ -96,6 +106,9 @@ public class UserService : IUserService
         var result = await _userManager.UpdateAsync(user);
         if (!result.Succeeded)
             throw new Exception(string.Join(", ", result.Errors.Select(e => e.Description)));
+
+        // --- THÔNG BÁO CẬP NHẬT ẢNH BÌA ---
+        // await _notificationService.CreateNotificationAsync(userId, "Ảnh bìa của bạn đã được cập nhật.", "SYSTEM", "/profile/me");
     }
 
     // ── MAPPER ────────────────────────────────────────────────

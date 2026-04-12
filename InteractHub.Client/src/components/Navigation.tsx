@@ -100,10 +100,10 @@ const Navbar: React.FC<NavbarProps> = ({ user: propUser, onChatClick, onNotifyCl
 
   return (
     <nav className="bg-[#242526] border-b border-[#3e4042] sticky top-0 z-50">
-      <div className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
+      <div className="max-w-7xl mx-auto px-2 h-20 flex items-center justify-between">
 
         {/* LEFT - Logo & Search */}
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 ">
           <Link to="/homepage" className="flex items-center gap-2 group">
             <div className="bg-[#1877f2] p-2 rounded-xl group-hover:rotate-12 transition-transform duration-300">
               <span className="text-white font-black text-xl italic">IH</span>
@@ -134,7 +134,7 @@ const Navbar: React.FC<NavbarProps> = ({ user: propUser, onChatClick, onNotifyCl
                 ) : results.length > 0 ? (
                   results.map((u) => (
                     <div key={u.Id} onClick={() => goToProfile(u.Id)} className="px-4 py-3 hover:bg-[#3a3b3c] flex items-center gap-3 cursor-pointer transition-colors">
-                      <img src={u.AvatarUrl || "/images/default-avatar.png"} alt="" className="w-10 h-10 rounded-full object-cover" />
+                      <img src={u.AvatarUrl || "/images/default-avatar.png"} alt="" className="w-15 h-15 rounded-full object-cover" />
                       <div>
                         <p className="font-medium text-white text-sm">{u.FullName || u.Username}</p>
                         <p className="text-xs text-gray-400">@{u.Username}</p>
@@ -164,7 +164,7 @@ const Navbar: React.FC<NavbarProps> = ({ user: propUser, onChatClick, onNotifyCl
             <img
               src={`https://localhost:7069${avatarSrc}`}
               alt="Me"
-              className="w-8 h-8 md:w-9 md:h-9 rounded-full object-cover border border-gray-600 group-hover:border-[#1877f2]"
+              className="w-12 h-12 md:w-11 md:h-11 rounded-full object-cover border border-gray-600 group-hover:border-[#1877f2]"
             />
             <span className="text-white text-[14px] font-semibold hidden sm:block group-hover:text-[#1877f2]">
               {displayName}
@@ -186,7 +186,7 @@ const Navbar: React.FC<NavbarProps> = ({ user: propUser, onChatClick, onNotifyCl
 // Component con cho các Icon điều hướng để code gọn hơn
 const NavIcon = ({ icon, to, onClick }: { icon: React.ReactNode; to?: string; onClick?: () => void }) => {
   const content = (
-    <div className="p-2.5 md:p-3 hover:bg-[#3a3b3c] rounded-xl cursor-pointer text-gray-400 hover:text-[#1877f2] transition-all text-2xl md:text-2xl">
+    <div className="p-2.5 md:p-3 hover:bg-[#3a3b3c] rounded-xl cursor-pointer text-gray-400 hover:text-[#1877f2] transition-all text-3xl md:text-3xl">
       {icon}
     </div>
   );

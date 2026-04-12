@@ -10,8 +10,8 @@ public class AppDbContext : IdentityDbContext<User>
 
     public DbSet<Post> Posts { get; set; }
     // --- THÊM DÒNG NÀY ---
-    public DbSet<PostMedia> PostMedias { get; set; } 
-    
+    public DbSet<PostMedia> PostMedias { get; set; }
+
     public DbSet<Story> Stories { get; set; }
     public DbSet<Like> Likes { get; set; }
     public DbSet<Comment> Comments { get; set; }
@@ -23,7 +23,7 @@ public class AppDbContext : IdentityDbContext<User>
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
-        base.OnModelCreating(modelBuilder); 
+        base.OnModelCreating(modelBuilder);
 
         // --- Cấu hình tự động tạo ngày cho Post ---
         modelBuilder.Entity<Post>()
@@ -75,6 +75,14 @@ public class AppDbContext : IdentityDbContext<User>
         modelBuilder.Entity<Post_Hashtag>()
             .HasKey(ch => new { ch.PostId, ch.HashtagId });
 
+        modelBuilder.Entity<Hashtag>()
+    .HasIndex(h => h.Tag)
+    .IsUnique();
+
+        modelBuilder.Entity<Hashtag>()
+            .Property(h => h.Tag)
+            .IsRequired()
+            .HasMaxLength(100);
         modelBuilder.Entity<Post_Hashtag>()
             .HasOne(ch => ch.Post)
             .WithMany(c => c.Post_Hashtags)

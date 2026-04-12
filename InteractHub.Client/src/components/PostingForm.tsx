@@ -18,27 +18,31 @@ const resolveUrl = (path?: string | null): string => {
 
 const PostingForm: React.FC<PostingFormProps> = ({ user, variant = "home" }) => {
   const [showForm, setShowForm] = useState(false);
-  const [currentUser, setCurrentUser] = useState<any>(null);
-
   // Chỉ lấy từ localStorage khi KHÔNG có user từ prop (dùng cho trang Home)
-  useEffect(() => {
-    if (user){
-      console.log(user)
-      return;
-    } 
-
+  const [currentUser] = useState<any>(() => {
+    if (typeof window === "undefined") return null; // Tránh lỗi SSR nếu có
     const storedUser = localStorage.getItem("interact_hub_user");
     if (storedUser) {
       try {
-        setCurrentUser(JSON.parse(storedUser));
+        return JSON.parse(storedUser);
       } catch (error) {
-        console.error("Lỗi parse user từ localStorage:", error);
+        console.error("Lỗi parse user:", error);
+        return null;
       }
+    }
+    return null;
+  });
+
+  // useEffect bây giờ chỉ dùng để log hoặc theo dõi thay đổi từ prop 'user'
+  useEffect(() => {
+    if (user) {
+      console.log("User từ props:", user);
     }
   }, [user]);
 
   // Ưu tiên user từ prop (Profile) > user từ localStorage (Home)
   const displayUser = user || currentUser;
+  console.log("fhasja",displayUser);
 
   return (
     <div
@@ -53,7 +57,7 @@ const PostingForm: React.FC<PostingFormProps> = ({ user, variant = "home" }) => 
             <img
               src={resolveUrl(displayUser.AvatarUrl)}
               alt="avatar"
-              className="w-11 h-11 rounded-full object-cover ring-2 ring-gray-700 hover:ring-[#1877f2] transition-all"
+              className="w-15 h-15 rounded-full object-cover ring-2 ring-gray-700 hover:ring-[#1877f2] transition-all"
               onError={(e) => {
                 (e.currentTarget as HTMLImageElement).src = "/images/default-avatar.png";
               }}

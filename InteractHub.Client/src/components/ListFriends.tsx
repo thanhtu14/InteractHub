@@ -2,13 +2,27 @@ import { useEffect, useState } from "react";
 import Friend from "./Friends";
 import { friendshipService } from "../services/friendshipService";
 
+// ── Interface BE (PascalCase - khớp C# DTO) ──────────────────
+interface FriendResponseDto {
+  Id: string;
+  Username: string;
+  AvatarUrl?: string;
+}
+
+// ── Interface FE (camelCase - dùng trong component) ───────────
 interface FriendType {
   id: string;
   fullName: string;
   avatarUrl?: string;
 }
 
-// 🔥 Hàm bỏ dấu tiếng Việt - Đã thêm check null/undefined để tránh lỗi normalize
+// ── Map BE → FE ───────────────────────────────────────────────
+const mapFriend = (item: FriendResponseDto): FriendType => ({
+  id: item.Id,
+  fullName: item.Username || "Người dùng",
+  avatarUrl: item.AvatarUrl,
+});
+
 const removeVietnameseTones = (str: string | undefined | null) => {
   if (!str) return "";
   return str
@@ -25,7 +39,6 @@ const FriendList = () => {
   const [loading, setLoading] = useState(true);
   const [keyword, setKeyword] = useState("");
 
-  // Lấy ID người dùng từ localStorage hoặc ID mặc định
   const user = JSON.parse(localStorage.getItem("interact_hub_user") || "{}");
   const currentUserId = user?.Id || "859ec493-a205-4b84-8681-8e0507090a0e";
 
@@ -34,15 +47,7 @@ const FriendList = () => {
       try {
         setLoading(true);
         const res = await friendshipService.getFriendsList(currentUserId);
-        
-        // ✅ Mapping dữ liệu từ PascalCase (Backend) sang camelCase (Frontend)
-        const formattedData = res.data.map((item: any) => ({
-          id: item.Id,               // C# trả về "Id"
-          fullName: item.Username || "Người dùng", // C# trả về "Username"
-          avatarUrl: item.AvatarUrl  // C# trả về "AvatarUrl"
-        }));
-
-        setFriends(formattedData);
+        setFriends((res.data as FriendResponseDto[]).map(mapFriend));
       } catch (error) {
         console.error("Lỗi khi tải danh sách bạn bè:", error);
       } finally {
@@ -53,7 +58,6 @@ const FriendList = () => {
     if (currentUserId) fetchFriends();
   }, [currentUserId]);
 
-  // 🔥 Filter an toàn
   const filteredFriends = friends.filter((f) =>
     removeVietnameseTones(f.fullName).includes(removeVietnameseTones(keyword))
   );
@@ -70,7 +74,7 @@ const FriendList = () => {
             {friends.length} bạn bè
           </span>
         </div>
-        
+
         <div className="relative">
           <input
             type="text"
@@ -86,7 +90,6 @@ const FriendList = () => {
       {/* Friends Scroll Area */}
       <div className="flex-1 overflow-y-auto px-2 no-scrollbar">
         {loading ? (
-          // Skeleton Loading
           [1, 2, 3, 4].map((i) => (
             <div key={i} className="flex items-center gap-3 p-2 animate-pulse">
               <div className="w-10 h-10 bg-[#3a3b3c] rounded-full" />

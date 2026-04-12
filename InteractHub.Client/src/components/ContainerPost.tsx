@@ -1,82 +1,79 @@
-import React, { useState } from "react";
-// import axios from "axios";
+import React, { useState, useEffect } from "react";
 import Post from "./Post";
+import { postService, type PostItem } from "../services/postService";
+import type { SortOrder, StatusFilter } from "./PostFilterBar";
 
 export interface PostData {
   id: string | number;
   userId?: string | number;
   fullName: string;
-  avatarUrl?: string;
+  authorAvatar?: string;
+  title?: string;
   content: string;
-  imageUrl?: string;
+  status?: number;
+  mediaUrls: string[];
   createdAt: string;
 }
 
 interface PostListProps {
   userId?: string | number | null;
+  sort?: SortOrder;
+  statusFilter?: StatusFilter;
 }
 
-// 🔧 MOCK posts — xóa khi có BE
-const MOCK_POSTS: PostData[] = [
-  {
-    id: 1,
-    userId: 1,
-    fullName: "Bùi Gia Quang Vinh",
-    avatarUrl: "https://i.pravatar.cc/150?u=vinh",
-    content: "Chào mọi người! Đây là bài viết đầu tiên 🎉",
-    createdAt: new Date().toISOString(),
-  },
-  {
-    id: 2,
-    userId: 2,
-    fullName: "Minh Thu",
-    avatarUrl: "https://i.pravatar.cc/150?u=thu",
-    content: "Hôm nay thời tiết đẹp quá 🌤️ Ra ngoài đi thôi mọi người ơi!",
-    createdAt: new Date(Date.now() - 1000 * 60 * 30).toISOString(),
-  },
-  {
-    id: 3,
-    userId: 3,
-    fullName: "Quốc Anh",
-    avatarUrl: "https://i.pravatar.cc/150?u=anh",
-    content: "Vừa hoàn thành dự án React đầu tiên 🚀 Cảm ơn mọi người đã hỗ trợ!",
-    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 2).toISOString(),
-  },
-  {
-    id: 4,
-    userId: 4,
-    fullName: "Hồng Nhung",
-    avatarUrl: "https://i.pravatar.cc/150?u=nhung",
-    content: "Cuối tuần rồi, ai có kế hoạch gì chưa? 😄",
-    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 5).toISOString(),
-  },
-];
+const mapPostItemToPostData = (post: PostItem): PostData => ({
+  id: post.id,
+  userId: post.userId,
+  fullName: post.authorName ?? "Ẩn danh",
+  authorAvatar: post.authorAvatar,
+  title: post.title,
+  content: post.content ?? "",
+  status: post.status,
+  mediaUrls: post.mediaUrls ?? [],
+  createdAt: post.createdAt ?? new Date().toISOString(),
+});
 
-const PostList: React.FC<PostListProps> = ({ userId = null }) => {
-  // 🔧 MOCK: lọc theo userId nếu có, thay vì fetch BE
-  // useEffect(() => {
-  //   const fetchPosts = async () => {
-  //     setLoading(true);
-  //     const url = userId
-  //       ? `http://localhost:8080/api/posts/user/${userId}`
-  //       : `http://localhost:8080/api/posts`;
-  //     try {
-  //       const response = await axios.get<PostData[]>(url);
-  //       setPosts(response.data || []);
-  //     } catch (error) {
-  //       console.error("Lỗi khi lấy danh sách bài viết:", error);
-  //       setPosts([]);
-  //     } finally {
-  //       setLoading(false);
-  //     }
-  //   };
-  //   fetchPosts();
-  // }, [userId]);
+const PostList: React.FC<PostListProps> = ({
+  userId = null,
+  sort = "newest",
+  statusFilter = "all",
+}) => {
+  const [posts, setPosts] = useState<PostData[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const [loading] = useState(false);
-  const posts = userId
-    ? MOCK_POSTS.filter((p) => String(p.userId) === String(userId))
-    : MOCK_POSTS;
+  useEffect(() => {
+    const fetchPosts = async () => {
+      setLoading(true);
+      setError(null);
+      try {
+        const res = await postService.getPostsByUserId(String(userId));
+        let data = res.data.map(mapPostItemToPostData);
+
+        // Lọc theo status
+        if (statusFilter !== "all") {
+          data = data.filter((p) => String(p.status) === statusFilter);
+        }
+
+        // Sắp xếp
+        data = data.sort((a, b) =>
+          sort === "oldest"
+            ? new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+            : new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+        );
+
+        setPosts(data);
+      } catch (err) {
+        console.error("Lỗi khi lấy danh sách bài viết:", err);
+        setError("Không thể tải bài viết. Vui lòng thử lại.");
+        setPosts([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchPosts();
+  }, [userId, sort, statusFilter]);
 
   if (loading) {
     return (
@@ -89,6 +86,10 @@ const PostList: React.FC<PostListProps> = ({ userId = null }) => {
         ))}
       </div>
     );
+  }
+
+  if (error) {
+    return <p className="text-center text-red-500 py-10">{error}</p>;
   }
 
   return (

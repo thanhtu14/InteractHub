@@ -2,7 +2,7 @@
 **/bin/
 **/obj/
 InteractHub.API/appsettings.Development.json
-
+InteractHub.API/Migrations
 # --- Chặn thư mục của React ---
 InteractHub.Client/node_modules/
 InteractHub.Client/dist/

@@ -8,7 +8,7 @@ public class Hashtag
     [Key]
     public int Id { get; set; }
 
-    public string? Tag { get; set; }
+    public string Tag { get; set; } = null!;
 
     public DateTime? CreatedAt { get; set; }
 

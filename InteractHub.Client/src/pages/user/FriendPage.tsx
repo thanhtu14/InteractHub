@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import Navbar from "../../components/Navigation";
 import FriendRequestList from "../../components/FriendRequestList";
+import FriendList from "../../components/ListFriends";
 
 interface User {
   id: string | number;
@@ -13,7 +14,6 @@ interface User {
 const FriendPage: React.FC = () => {
   const navigate = useNavigate();
 
-  // 1. TỐI ƯU: Lấy user ngay khi khởi tạo State
   const [user] = useState<User | null>(() => {
     const storedUser = localStorage.getItem("interact_hub_user");
     if (storedUser) {
@@ -28,21 +28,37 @@ const FriendPage: React.FC = () => {
     return null;
   });
 
-  // 2. Chỉ dùng useEffect để kiểm tra quyền truy cập (Auth Guard)
   useEffect(() => {
-    if (!user) {
-      navigate("/");
-    }
+    if (!user) navigate("/");
   }, [user, navigate]);
 
   return (
     <div className="min-h-screen bg-[#18191a]">
       <Navbar />
-      
-      {/* Wrapper để căn chỉnh nội dung giống Facebook */}
+
       <main className="max-w-[1200px] mx-auto pt-20 px-4">
-        <h1 className="text-2xl font-bold text-white mb-6">Lời mời kết bạn</h1>
-        <FriendRequestList />
+        <div className="flex gap-4 items-start">
+
+          {/* ── CỘT TRÁI: Lời mời kết bạn ── */}
+          <div className="w-[360px] flex-shrink-0">
+            <h2 className="text-xl font-bold text-white mb-4">
+              Lời mời kết bạn
+            </h2>
+            <FriendRequestList />
+          </div>
+
+          {/* Divider */}
+          <div className="w-px self-stretch bg-[#3e4042]" />
+
+          {/* ── CỘT PHẢI: Danh sách bạn bè ── */}
+          <div className="flex-1">
+            <h2 className="text-xl font-bold text-white mb-4">
+              Bạn bè
+            </h2>
+            <FriendList />
+          </div>
+
+        </div>
       </main>
     </div>
   );

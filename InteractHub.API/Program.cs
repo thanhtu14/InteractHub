@@ -36,6 +36,16 @@ builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<IFriendshipRepository, FriendshipRepository>();
 builder.Services.AddScoped<IFriendshipService, FriendshipService>();
+builder.Services.AddScoped<INotificationRepository, NotificationRepository>();
+builder.Services.AddScoped<INotificationService, NotificationService>();
+builder.Services.AddScoped<IPostRepository, PostRepository>(); // Đăng ký Repository trước
+builder.Services.AddScoped<IPostService, PostService>();
+builder.Services.AddScoped<IMediaService,MediaService>(); // Đăng ký Repository trước
+builder.Services.AddScoped<IHashtagRepository, HashtagRepository>(); // Đăng ký Repository trước
+builder.Services.AddScoped<IHashtagService, HashtagService>();
+builder.Services.AddScoped<IPostHashtagRepository, PostHashtagRepository>(); // Đăng ký Repository trước
+
+// builder.Services.AddScoped<IPostService, PostService>();
 
 // ── 4. JWT Authentication ────────────────────────────────────────
 var jwtSettings = builder.Configuration.GetSection("JwtSettings");
