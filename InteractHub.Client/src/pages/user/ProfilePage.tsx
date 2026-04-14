@@ -2,7 +2,6 @@ import React, { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { FaTimes } from "react-icons/fa";
 
-// Components
 import Navbar from "../../components/Navigation";
 import ProfileHeader from "../../components/ProfileHeader";
 import FriendList from "../../components/ListFriends";
@@ -13,13 +12,14 @@ import PostingForm from "../../components/PostingForm";
 import PostFilterBar, { type SortOrder, type StatusFilter } from "../../components/PostFilterBar";
 import PostManagerModal from "../../components/PostManagerModal";
 
-// Services & Types
 import { userService } from "../../services/userService";
+import { friendshipService } from "../../services/friendshipService";
 import type { User } from "../../schemas/user.schema";
 
 const ProfilePage: React.FC = () => {
   const [user, setUser] = useState<User | null>(null);
   const [loggedInUser, setLoggedInUser] = useState<User | null>(null);
+  const [isFriend, setIsFriend] = useState(false);
   const [showModal, setShowModal] = useState(false);
   const [showManager, setShowManager] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -29,14 +29,13 @@ const ProfilePage: React.FC = () => {
   const navigate = useNavigate();
   const { id: paramId } = useParams();
 
-  // ── 1. Fetch dữ liệu ───────────────────────────────────────
+  // ── 1. Fetch user profile ──────────────────────────────────
   useEffect(() => {
     const fetchUserData = async () => {
       setLoading(true);
       try {
         const res = await userService.getProfile(paramId);
         const data = res.data;
-
         setUser(data);
 
         if (!paramId) {
@@ -57,14 +56,35 @@ const ProfilePage: React.FC = () => {
     fetchUserData();
   }, [paramId, navigate]);
 
-  // ── 2. Xử lý sau khi update thành công ────────────────────
+  // ── 2. Fetch trạng thái bạn bè khi xem profile người khác ──
+  useEffect(() => {
+    if (!paramId) {
+      setIsFriend(false);
+      return;
+    }
+    friendshipService.getFriendshipStatus(paramId).then((res) => {
+      // status === 1 là đã là bạn bè
+      setIsFriend(res.data.status === 1);
+    }).catch(() => setIsFriend(false));
+  }, [paramId]);
+
+  // ── 3. Reset filter khi chuyển profile ────────────────────
+  const isOwnProfilePage = !paramId || user?.Id === loggedInUser?.Id;
+
+  useEffect(() => {
+    if (!isOwnProfilePage && (statusFilter === "2" || statusFilter === "3")) {
+      setStatusFilter("all");
+    }
+  }, [isOwnProfilePage]);
+
+  // ── 4. Xử lý sau khi update ───────────────────────────────
   const handleSubmitSuccess = (updatedUser: User) => {
     setUser(updatedUser);
     setLoggedInUser(updatedUser);
     setTimeout(() => setShowModal(false), 1000);
   };
 
-  // ── 3. Loading ─────────────────────────────────────────────
+  // ── 5. Loading ─────────────────────────────────────────────
   if (loading || !user) {
     return (
       <div className="min-h-screen bg-[#18191a] flex items-center justify-center">
@@ -72,8 +92,6 @@ const ProfilePage: React.FC = () => {
       </div>
     );
   }
-
-  const isOwnProfilePage = !paramId || user.Id === loggedInUser?.Id;
 
   return (
     <div className="min-h-screen bg-[#18191a] text-white">
@@ -96,14 +114,12 @@ const ProfilePage: React.FC = () => {
                 <p className="text-center text-gray-300 mb-4 italic">
                   {user.Bio || "Chưa có tiểu sử"}
                 </p>
-                <InfoContainer
-                  user={user}
-                  isOwnProfile={isOwnProfilePage}
-                />
+                <InfoContainer user={user} isOwnProfile={isOwnProfilePage} />
               </div>
 
               <div className="bg-[#242526] p-4 rounded-xl border border-[#3e4042] shadow-sm">
-                <FriendList />
+                {/* Truyền userId của người đang xem profile */}
+                <FriendList userId={user.Id} />
               </div>
             </div>
           </aside>
@@ -122,12 +138,16 @@ const ProfilePage: React.FC = () => {
               onSortChange={setSort}
               onStatusChange={setStatusFilter}
               onManageClick={() => setShowManager(true)}
+              isOwnProfile={isOwnProfilePage}
+              isFriend={isFriend}
             />
 
             <PostList
               userId={user.Id}
               sort={sort}
               statusFilter={statusFilter}
+              isOwnProfile={isOwnProfilePage}
+              isFriend={isFriend}
             />
           </section>
         </div>
@@ -159,7 +179,7 @@ const ProfilePage: React.FC = () => {
       )}
 
       {/* MODAL QUẢN LÝ BÀI VIẾT */}
-      {showManager && (
+      {showManager && isOwnProfilePage && (
         <PostManagerModal
           userId={user.Id}
           onClose={() => setShowManager(false)}

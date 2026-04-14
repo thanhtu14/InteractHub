@@ -2,21 +2,18 @@ import { useEffect, useState } from "react";
 import Friend from "./Friends";
 import { friendshipService } from "../services/friendshipService";
 
-// ── Interface BE (PascalCase - khớp C# DTO) ──────────────────
 interface FriendResponseDto {
   Id: string;
   Username: string;
   AvatarUrl?: string;
 }
 
-// ── Interface FE (camelCase - dùng trong component) ───────────
 interface FriendType {
   id: string;
   fullName: string;
   avatarUrl?: string;
 }
 
-// ── Map BE → FE ───────────────────────────────────────────────
 const mapFriend = (item: FriendResponseDto): FriendType => ({
   id: item.Id,
   fullName: item.Username || "Người dùng",
@@ -34,19 +31,21 @@ const removeVietnameseTones = (str: string | undefined | null) => {
     .trim();
 };
 
-const FriendList = () => {
+interface FriendListProps {
+  userId: string; // ← nhận userId từ ngoài vào
+}
+
+const FriendList = ({ userId }: FriendListProps) => {
   const [friends, setFriends] = useState<FriendType[]>([]);
   const [loading, setLoading] = useState(true);
   const [keyword, setKeyword] = useState("");
 
-  const user = JSON.parse(localStorage.getItem("interact_hub_user") || "{}");
-  const currentUserId = user?.Id || "859ec493-a205-4b84-8681-8e0507090a0e";
-
   useEffect(() => {
+    if (!userId) return;
     const fetchFriends = async () => {
       try {
         setLoading(true);
-        const res = await friendshipService.getFriendsList(currentUserId);
+        const res = await friendshipService.getFriendsList(userId);
         setFriends((res.data as FriendResponseDto[]).map(mapFriend));
       } catch (error) {
         console.error("Lỗi khi tải danh sách bạn bè:", error);
@@ -54,9 +53,8 @@ const FriendList = () => {
         setLoading(false);
       }
     };
-
-    if (currentUserId) fetchFriends();
-  }, [currentUserId]);
+    fetchFriends();
+  }, [userId]);
 
   const filteredFriends = friends.filter((f) =>
     removeVietnameseTones(f.fullName).includes(removeVietnameseTones(keyword))
@@ -64,7 +62,6 @@ const FriendList = () => {
 
   return (
     <div className="flex flex-col h-full bg-[#18191a] text-white">
-      {/* Search Header */}
       <div className="p-4 sticky top-0 bg-[#18191a] z-10">
         <div className="flex justify-between items-center mb-4">
           <h2 className="text-gray-400 font-bold uppercase text-xs tracking-widest">
@@ -74,7 +71,6 @@ const FriendList = () => {
             {friends.length} bạn bè
           </span>
         </div>
-
         <div className="relative">
           <input
             type="text"
@@ -87,7 +83,6 @@ const FriendList = () => {
         </div>
       </div>
 
-      {/* Friends Scroll Area */}
       <div className="flex-1 overflow-y-auto px-2 no-scrollbar">
         {loading ? (
           [1, 2, 3, 4].map((i) => (

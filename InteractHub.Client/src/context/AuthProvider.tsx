@@ -22,7 +22,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   });
 
   // isLoading bây giờ có thể mặc định là false vì dữ liệu đã có ngay từ đầu
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading] = useState(false);
 
   const login = (userData: User, newToken: string) => {
     setToken(newToken);

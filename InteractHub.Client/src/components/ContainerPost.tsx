@@ -19,6 +19,8 @@ interface PostListProps {
   userId?: string | number | null;
   sort?: SortOrder;
   statusFilter?: StatusFilter;
+  isOwnProfile?: boolean;
+  isFriend?: boolean;
 }
 
 const mapPostItemToPostData = (post: PostItem): PostData => ({
@@ -37,6 +39,8 @@ const PostList: React.FC<PostListProps> = ({
   userId = null,
   sort = "newest",
   statusFilter = "all",
+  isOwnProfile = false,
+  isFriend = false,
 }) => {
   const [posts, setPosts] = useState<PostData[]>([]);
   const [loading, setLoading] = useState(false);
@@ -50,12 +54,21 @@ const PostList: React.FC<PostListProps> = ({
         const res = await postService.getPostsByUserId(String(userId));
         let data = res.data.map(mapPostItemToPostData);
 
-        // Lọc theo status
+        // ── Lọc theo quyền xem ──────────────────────────────
+        if (!isOwnProfile) {
+          data = data.filter((p) => {
+            if (p.status === 1) return true;          // công khai: ai cũng thấy
+            if (p.status === 2 && isFriend) return true; // bạn bè: chỉ bạn thấy
+            return false;                              // riêng tư: không ai thấy
+          });
+        }
+
+        // ── Lọc theo statusFilter (chỉ áp dụng khi là chủ trang hoặc bạn bè) ──
         if (statusFilter !== "all") {
           data = data.filter((p) => String(p.status) === statusFilter);
         }
 
-        // Sắp xếp
+        // ── Sắp xếp ─────────────────────────────────────────
         data = data.sort((a, b) =>
           sort === "oldest"
             ? new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
@@ -73,16 +86,13 @@ const PostList: React.FC<PostListProps> = ({
     };
 
     fetchPosts();
-  }, [userId, sort, statusFilter]);
+  }, [userId, sort, statusFilter, isOwnProfile, isFriend]);
 
   if (loading) {
     return (
       <div className="space-y-4">
         {[1, 2, 3].map((i) => (
-          <div
-            key={i}
-            className="h-64 bg-[#242526] rounded-xl border border-gray-800 animate-pulse"
-          />
+          <div key={i} className="h-64 bg-[#242526] rounded-xl border border-gray-800 animate-pulse" />
         ))}
       </div>
     );

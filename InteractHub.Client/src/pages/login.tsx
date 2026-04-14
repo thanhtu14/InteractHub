@@ -27,6 +27,10 @@ const LoginPage = () => {
     try {
       const res = await loginAPI(formData.email, formData.password);
       login(res.data.User, res.data.Token);
+      // localStorage.setItem("interact_hub_token", res.data.Token);
+
+      // // 2. Lưu user (là Object nên PHẢI dùng JSON.stringify)
+      // localStorage.setItem("interact_hub_user", JSON.stringify(res.data.User));
       navigate("/homepage");
     } catch (error: unknown) {
       if (axios.isAxiosError(error)) {
