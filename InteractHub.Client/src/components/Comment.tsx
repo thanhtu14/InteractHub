@@ -1,40 +1,193 @@
-import React from "react";
-
-interface CommentData {
-  avatarUrl?: string;
-  userName: string;
-  content: string;
-}
+import React, { useState, useEffect } from "react";
+import { commentService, type CommentResponse } from "../services/commetService";
 
 interface CommentProps {
-  comment: CommentData;
+  comment: CommentResponse;
+  postId: number;
+  onReplyAdded?: (newComment: CommentResponse) => void;
+  depth?: number;
+  parentUserName?: string;
 }
+const getTimeAgo = (dateString?: string | null): string => {
+  if (!dateString) return "";
 
-const Comment: React.FC<CommentProps> = ({ comment }) => {
-  const avatarSrc = comment.avatarUrl
-  ? comment.avatarUrl.startsWith("http")
-    ? comment.avatarUrl                                      // ✅ URL đầy đủ → dùng thẳng
-    // : `http://localhost:8080/uploads/${comment.avatarUrl}`  // ✅ chỉ là filename → mới prefix
-    : `data:image/jpeg;base64,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`  // ✅ chỉ là filename → mới prefix
-  : "/assets/img/icons8-user-default-64.png";
+  // Chuẩn hóa format từ DB (ví dụ: "2026-04-11 09:13:26") sang chuẩn ISO
+  const normalizedDate = dateString.replace(" ", "T") + "Z";
+  const now = new Date();
+  const past = new Date(normalizedDate);
+
+  const diffInSeconds = Math.floor((now.getTime() - past.getTime()) / 1000);
+
+  if (diffInSeconds < 60) return "vừa xong";
+
+  const diffInMinutes = Math.floor(diffInSeconds / 60);
+  if (diffInMinutes < 60) return `${diffInMinutes} phút`;
+
+  const diffInHours = Math.floor(diffInMinutes / 60);
+  if (diffInHours < 24) return `${diffInHours} giờ`;
+
+  const diffInDays = Math.floor(diffInHours / 24);
+  if (diffInDays < 7) return `${diffInDays} ngày`;
+
+  return `${Math.floor(diffInDays / 7)} tuần`;
+};
+
+const SERVER_BASE_URL = "https://localhost:7069";
+
+const resolveUrl = (path?: string | null): string | undefined => {
+  if (!path) return undefined;
+  if (path.startsWith("http")) return path;
+  return `${SERVER_BASE_URL}${path}`;
+};
+
+const Comment: React.FC<CommentProps> = ({ comment, postId, onReplyAdded, depth = 0, parentUserName }) => {
+  const [isLiked, setIsLiked] = useState(comment.IsLikedByCurrentUser);
+  const [likeCount, setLikeCount] = useState(comment.LikeCount);
+  const [showReplyInput, setShowReplyInput] = useState(false);
+  const [replyContent, setReplyContent] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [replies, setReplies] = useState<CommentResponse[]>(comment.Replies || []);
+  const [showReplies, setShowReplies] = useState(false);
+
+  useEffect(() => {
+    setIsLiked(comment.IsLikedByCurrentUser);
+    setLikeCount(comment.LikeCount);
+    setReplies(comment.Replies || []);
+  }, [comment]);
+
+  const handleToggleLike = async () => {
+    try {
+      const res = await commentService.toggleLike(comment.Id);
+      if (res.Success && res.Data) {
+        setIsLiked(res.Data.IsLiked);
+        setLikeCount(res.Data.LikeCount);
+      }
+    } catch (err) {
+      console.error("Lỗi khi Like:", err);
+    }
+  };
+
+  const handleReplySubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!replyContent.trim() || isSubmitting) return;
+
+    setIsSubmitting(true);
+    try {
+      const res = await commentService.create({
+        PostId: postId,
+        Content: replyContent.trim(),
+        ParentId: comment.Id,
+      });
+
+      if (res.Success && res.Data) {
+        if (depth === 0) {
+          setReplies(prev => [...prev, res.Data!]);
+          setShowReplies(true);
+        }
+        onReplyAdded?.(res.Data!);
+        setReplyContent("");
+        setShowReplyInput(false);
+      }
+    } catch (err) {
+      console.error("Reply failed", err);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const isTopLevel = depth === 0;
 
   return (
-    <div className="flex items-center mb-4">
-      <img
-        src={avatarSrc}
-        alt={`${comment.userName}'s avatar`}
-        className="w-10 h-10 rounded-full mb-5 object-cover shrink-0"
-        onError={(e) =>
-          (e.currentTarget.src = "/assets/img/icons8-user-default-64.png")
-        }
-      />
-      <div className="bg-[#3a3b3c] p-[10px] rounded-[10px] ml-3">
-        <strong className="block text-sm font-bold text-white">
-          {comment.userName}
-        </strong>
-        <p className="m-0 text-gray-300 leading-relaxed break-words">
-          {comment.content}
-        </p>
+    <div className={`flex gap-3 ${isTopLevel ? "mt-5" : "mt-3"}`}>
+      {/* Avatar - Tăng size lên 40px cho cấp 1 và 32px cho cấp 2 */}
+      <div className="flex-shrink-0">
+        <img
+          src={resolveUrl(comment.UserAvatar) || "/assets/img/icons8-user-default-64.png"}
+          className={`${isTopLevel ? "w-10 h-10" : "w-8 h-8"} rounded-full object-cover border border-gray-600 shadow-sm`}
+          alt={comment.UserName}
+        />
+      </div>
+
+      <div className="flex-1 min-w-0">
+        {/* Bong bóng bình luận - Tăng padding và text size */}
+        <div className="bg-[#3a3b3c] rounded-2xl px-4 py-2.5 w-fit max-w-[95%] shadow-md">
+          <p className="text-white text-[14px] font-semibold hover:underline cursor-pointer mb-0.5">
+            {comment.UserName}
+          </p>
+          <p className="text-gray-100 text-[15px] leading-relaxed break-words">
+            {!isTopLevel && parentUserName && (
+              <span className="text-blue-400 font-bold mr-1.5 cursor-pointer hover:underline">
+                @{parentUserName}
+              </span>
+            )}
+            {comment.Content}
+          </p>
+        </div>
+
+        {/* Actions - Cập nhật phần hiển thị thời gian */}
+        <div className="flex items-center gap-5 mt-1.5 ml-2 text-[12px] font-bold text-gray-400">
+          <button
+            onClick={handleToggleLike}
+            className={`hover:underline transition-all ${isLiked ? "text-[#1877f2] scale-105" : ""}`}
+          >
+            Thích {likeCount > 0 ? likeCount : ""}
+          </button>
+
+          <button onClick={() => setShowReplyInput(!showReplyInput)} className="hover:underline">
+            Phản hồi
+          </button>
+
+          {/* ✅ HIỂN THỊ THỜI GIAN THỰC TỪ DATA */}
+          <span className="font-normal opacity-70 cursor-default">
+            {getTimeAgo(comment.CreatedAt)}
+          </span>
+        </div>
+
+        {/* Input trả lời - Tăng chiều cao input */}
+        {showReplyInput && (
+          <form onSubmit={handleReplySubmit} className="mt-3 flex gap-2">
+            <input
+              autoFocus
+              value={replyContent}
+              onChange={(e) => setReplyContent(e.target.value)}
+              placeholder={`Trả lời ${comment.UserName}...`}
+              className="flex-1 bg-[#3a3b3c] text-white text-[14px] px-4 py-2 rounded-full outline-none focus:ring-2 ring-[#1877f2] transition-all"
+            />
+          </form>
+        )}
+
+        {/* Nút xem phản hồi - Tăng kích thước */}
+        {isTopLevel && replies.length > 0 && (
+          <div className="mt-2 ml-2">
+            <button
+              onClick={() => setShowReplies(!showReplies)}
+              className="text-gray-400 text-[13px] font-bold hover:underline flex items-center gap-2"
+            >
+              <span className="w-6 h-[1px] bg-gray-600 inline-block"></span>
+              {showReplies ? "Ẩn bớt phản hồi" : `Xem tất cả ${replies.length} phản hồi`}
+            </button>
+          </div>
+        )}
+
+        {/* Render Replies - Tăng border-left để phân tách rõ hơn */}
+        {isTopLevel && showReplies && replies.length > 0 && (
+          <div className="mt-3 space-y-3 border-l-[3px] border-[#4e4f50] ml-1 pl-4">
+            {replies.map((reply) => (
+              <Comment
+                key={reply.Id}
+                comment={reply}
+                postId={postId}
+                depth={1}
+                parentUserName={reply.ParentUserName}
+                onReplyAdded={(newReply) => {
+                  if (!replies.find(r => r.Id === newReply.Id)) {
+                    setReplies(prev => [...prev, newReply]);
+                  }
+                }}
+              />
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );

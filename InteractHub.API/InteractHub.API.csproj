@@ -27,6 +27,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Folder Include="Common\Middlewares\" />
     <Folder Include="DTOs\Friendships\" />
   </ItemGroup>
 

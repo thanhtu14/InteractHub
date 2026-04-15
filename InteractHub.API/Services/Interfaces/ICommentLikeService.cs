@@ -1,0 +1,9 @@
+// Services/Interfaces/ICommentLikeService.cs
+using InteractHub.API.DTOs.Comments;
+
+namespace InteractHub.API.Services.Interfaces;
+
+public interface ICommentLikeService
+{
+    Task<CommentLikeResponseDTO?> ToggleAsync(string userId, int commentId);
+}

@@ -11,6 +11,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.Extensions.FileProviders;
+using InteractHub.API.Common.Middlewares;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -44,6 +45,12 @@ builder.Services.AddScoped<IMediaService,MediaService>(); // Đăng ký Reposito
 builder.Services.AddScoped<IHashtagRepository, HashtagRepository>(); // Đăng ký Repository trước
 builder.Services.AddScoped<IHashtagService, HashtagService>();
 builder.Services.AddScoped<IPostHashtagRepository, PostHashtagRepository>(); // Đăng ký Repository trước
+builder.Services.AddScoped<ILikeRepository, LikeRepository>();
+builder.Services.AddScoped<ILikeService, LikeService>();
+builder.Services.AddScoped<ICommentRepository, CommentRepository>();
+builder.Services.AddScoped<ICommentService, CommentService>();
+builder.Services.AddScoped<ICommentLikeRepository, CommentLikeRepository>();
+builder.Services.AddScoped<ICommentLikeService, CommentLikeService>();
 
 // builder.Services.AddScoped<IPostService, PostService>();
 
@@ -163,6 +170,8 @@ if (app.Environment.IsDevelopment())
 app.UseHttpsRedirection();
 app.UseCors("AllowReactApp");
 app.UseCookiePolicy();
+app.UseMiddleware<ExceptionMiddleware>();
+
 
 // ── 11. Static Files ──────────────────────────────────────────────
 // Serve wwwroot mặc định (index.html, css, js,...)

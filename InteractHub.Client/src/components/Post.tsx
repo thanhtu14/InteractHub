@@ -2,6 +2,7 @@ import { useState, useRef, useEffect, useCallback } from "react";
 import CommentSection from "./CommentSection";
 import ReactionModal from "../components/ReactionDetailsModal";
 import { likeService } from "../services/likeService";
+import { commentService } from "../services/commetService";
 
 interface PostProps {
   post: {
@@ -75,7 +76,26 @@ const Post = ({ post }: PostProps) => {
 
   const hoverTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
   const currentReaction = REACTIONS.find((r) => r.key === reaction);
+  const [commentCount, setCommentCount] = useState(0);
 
+  // ── FETCH COMMENT COUNT ──────────────────────────────────────
+  const fetchCommentCount = useCallback(async () => {
+    try {
+      const res = await commentService.getByPost(post.id as number);
+      if (res.Success && res.Data) {
+        // Hàm đệ quy để đếm tất cả các node trong cây comment
+        const countAll = (list: any[]): number => {
+          return list.reduce((acc, curr) => {
+            const repliesCount = curr.Replies ? countAll(curr.Replies) : 0;
+            return acc + 1 + repliesCount;
+          }, 0);
+        };
+        setCommentCount(countAll(res.Data));
+      }
+    } catch (error) {
+      console.error("Lỗi fetch comment:", error);
+    }
+  }, [post.id]);
   // ── LOGIC FETCH STATE (Hỗ trợ cả PascalCase và camelCase) ──────
   const fetchLikeState = useCallback(async () => {
     try {
@@ -92,9 +112,22 @@ const Post = ({ post }: PostProps) => {
       console.error("Lỗi:", error);
     }
   }, [post.id]);
-  useEffect(() => {
-    fetchLikeState();
-  }, [fetchLikeState]);
+useEffect(() => {
+  let isMounted = true; // Biến cờ để tránh update state khi component đã unmount
+
+  const loadData = async () => {
+    if (isMounted) {
+      await fetchLikeState();
+      await fetchCommentCount();
+    }
+  };
+
+  loadData();
+
+  return () => {
+    isMounted = false; // Cleanup function
+  };
+}, [fetchLikeState, fetchCommentCount]);
 
   // ── LOGIC MEDIA ORIENTATION ────────────────────────────────────
   useEffect(() => {
@@ -103,6 +136,7 @@ const Post = ({ post }: PostProps) => {
       post.mediaUrls.map((url) => getOrientation(resolveUrl(url)))
     ).then(setOrientations);
   }, [post.mediaUrls]);
+
 
   // ── EVENT HANDLERS ─────────────────────────────────────────────
   const handleMouseEnterBtn = () => {
@@ -169,30 +203,42 @@ const Post = ({ post }: PostProps) => {
     );
 
   const renderMediaGrid = () => {
-  const urls = post.mediaUrls;
-  if (!urls?.length) return null;
-  if (!orientations) return <div className="w-full h-48 bg-[#3a3b3c] rounded-xl animate-pulse" />;
+    const urls = post.mediaUrls;
+    if (!urls?.length) return null;
+    if (!orientations) return <div className="w-full h-48 bg-[#3a3b3c] rounded-xl animate-pulse" />;
 
-  const total = urls.length;
-  const firstIsPortrait = orientations[0] === "portrait";
+    const total = urls.length;
+    const firstIsPortrait = orientations[0] === "portrait";
 
-  // ── 1 media ──────────────────────────────────────────────
-  if (total === 1) {
-    return (
-      <div className="overflow-hidden rounded-2xl">
-        {renderMedia(urls[0], 0)}
-      </div>
-    );
-  }
-
-  // ── 2 media ──────────────────────────────────────────────
-  if (total === 2) {
-    const allPortrait = orientations.every((o) => o === "portrait");
-
-    // Cả 2 dọc → side by side bằng nhau
-    if (allPortrait) {
+    // ── 1 media ──────────────────────────────────────────────
+    if (total === 1) {
       return (
-        <div className="grid grid-cols-2 gap-1">
+        <div className="overflow-hidden rounded-2xl">
+          {renderMedia(urls[0], 0)}
+        </div>
+      );
+    }
+
+    // ── 2 media ──────────────────────────────────────────────
+    if (total === 2) {
+      const allPortrait = orientations.every((o) => o === "portrait");
+
+      // Cả 2 dọc → side by side bằng nhau
+      if (allPortrait) {
+        return (
+          <div className="grid grid-cols-2 gap-1">
+            {urls.map((url, i) => (
+              <div key={i} className="overflow-hidden rounded-2xl">
+                {renderMedia(url, i)}
+              </div>
+            ))}
+          </div>
+        );
+      }
+
+      // Mixed hoặc cả 2 ngang → xếp dọc, tự co height
+      return (
+        <div className="flex flex-col gap-1">
           {urls.map((url, i) => (
             <div key={i} className="overflow-hidden rounded-2xl">
               {renderMedia(url, i)}
@@ -202,30 +248,35 @@ const Post = ({ post }: PostProps) => {
       );
     }
 
-    // Mixed hoặc cả 2 ngang → xếp dọc, tự co height
-    return (
-      <div className="flex flex-col gap-1">
-        {urls.map((url, i) => (
-          <div key={i} className="overflow-hidden rounded-2xl">
-            {renderMedia(url, i)}
+    // ── 3 media ──────────────────────────────────────────────
+    if (total === 3) {
+      // Ảnh đầu dọc → bên trái, 2 ảnh còn lại xếp dọc bên phải
+      if (firstIsPortrait) {
+        return (
+          <div className="flex gap-1">
+            <div className="w-[55%] overflow-hidden rounded-2xl">
+              {renderMedia(urls[0], 0)}
+            </div>
+            <div className="flex flex-col gap-1 flex-1">
+              {urls.slice(1).map((url, i) => (
+                <div key={i + 1} className="flex-1 overflow-hidden rounded-2xl min-h-[150px]">
+                  {renderMedia(url, i + 1)}
+                </div>
+              ))}
+            </div>
           </div>
-        ))}
-      </div>
-    );
-  }
+        );
+      }
 
-  // ── 3 media ──────────────────────────────────────────────
-  if (total === 3) {
-    // Ảnh đầu dọc → bên trái, 2 ảnh còn lại xếp dọc bên phải
-    if (firstIsPortrait) {
+      // Ảnh đầu ngang → full width, 2 ảnh còn lại side by side
       return (
-        <div className="flex gap-1">
-          <div className="w-[55%] overflow-hidden rounded-2xl">
+        <div className="flex flex-col gap-1">
+          <div className="overflow-hidden rounded-2xl">
             {renderMedia(urls[0], 0)}
           </div>
-          <div className="flex flex-col gap-1 flex-1">
+          <div className="grid grid-cols-2 gap-1">
             {urls.slice(1).map((url, i) => (
-              <div key={i + 1} className="flex-1 overflow-hidden rounded-2xl min-h-[150px]">
+              <div key={i + 1} className="overflow-hidden rounded-2xl min-h-[150px]">
                 {renderMedia(url, i + 1)}
               </div>
             ))}
@@ -234,37 +285,42 @@ const Post = ({ post }: PostProps) => {
       );
     }
 
-    // Ảnh đầu ngang → full width, 2 ảnh còn lại side by side
+    // ── 4+ media ─────────────────────────────────────────────
+    const remaining = urls.slice(1, 4);
+    const extra = total - 4;
+
+    // Ảnh đầu dọc → bên trái, 3 ảnh còn lại xếp dọc bên phải
+    if (firstIsPortrait) {
+      return (
+        <div className="flex gap-1 h-[500px]">
+          <div className="w-[55%] overflow-hidden rounded-2xl">
+            {renderMedia(urls[0], 0)}
+          </div>
+          <div className="flex flex-col gap-1 flex-1">
+            {remaining.map((url, i) => (
+              <div key={i + 1} className="relative flex-1 overflow-hidden rounded-2xl">
+                {renderMedia(url, i + 1)}
+                {i === 2 && extra > 0 && (
+                  <div className="absolute inset-0 bg-black/60 flex items-center justify-center rounded-2xl">
+                    <span className="text-white text-2xl font-bold">+{extra}</span>
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      );
+    }
+
+    // Ảnh đầu ngang → full width, 3 ảnh còn lại chia 3 cột
     return (
       <div className="flex flex-col gap-1">
         <div className="overflow-hidden rounded-2xl">
           {renderMedia(urls[0], 0)}
         </div>
-        <div className="grid grid-cols-2 gap-1">
-          {urls.slice(1).map((url, i) => (
-            <div key={i + 1} className="overflow-hidden rounded-2xl min-h-[150px]">
-              {renderMedia(url, i + 1)}
-            </div>
-          ))}
-        </div>
-      </div>
-    );
-  }
-
-  // ── 4+ media ─────────────────────────────────────────────
-  const remaining = urls.slice(1, 4);
-  const extra = total - 4;
-
-  // Ảnh đầu dọc → bên trái, 3 ảnh còn lại xếp dọc bên phải
-  if (firstIsPortrait) {
-    return (
-      <div className="flex gap-1 h-[500px]">
-        <div className="w-[55%] overflow-hidden rounded-2xl">
-          {renderMedia(urls[0], 0)}
-        </div>
-        <div className="flex flex-col gap-1 flex-1">
+        <div className="grid grid-cols-3 gap-1 h-[180px]">
           {remaining.map((url, i) => (
-            <div key={i + 1} className="relative flex-1 overflow-hidden rounded-2xl">
+            <div key={i + 1} className="relative overflow-hidden rounded-2xl">
               {renderMedia(url, i + 1)}
               {i === 2 && extra > 0 && (
                 <div className="absolute inset-0 bg-black/60 flex items-center justify-center rounded-2xl">
@@ -276,29 +332,7 @@ const Post = ({ post }: PostProps) => {
         </div>
       </div>
     );
-  }
-
-  // Ảnh đầu ngang → full width, 3 ảnh còn lại chia 3 cột
-  return (
-    <div className="flex flex-col gap-1">
-      <div className="overflow-hidden rounded-2xl">
-        {renderMedia(urls[0], 0)}
-      </div>
-      <div className="grid grid-cols-3 gap-1 h-[180px]">
-        {remaining.map((url, i) => (
-          <div key={i + 1} className="relative overflow-hidden rounded-2xl">
-            {renderMedia(url, i + 1)}
-            {i === 2 && extra > 0 && (
-              <div className="absolute inset-0 bg-black/60 flex items-center justify-center rounded-2xl">
-                <span className="text-white text-2xl font-bold">+{extra}</span>
-              </div>
-            )}
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-};
+  };
   return (
     <div className="bg-[#242526] border border-[#3e4042] rounded-3xl shadow-xl mb-6 overflow-hidden text-white">
       {/* HEADER */}
@@ -334,24 +368,25 @@ const Post = ({ post }: PostProps) => {
       {/* MEDIA */}
       {post.mediaUrls?.length > 0 && <div className="px-4 pb-4">{renderMediaGrid()}</div>}
 
-      {/* REACTION COUNT */}
-      {reactionCount > 0 && (
-        <div
-          onClick={openReactionModal}
-          className="px-4 py-2 border-t border-[#3e4042] text-gray-400 text-sm cursor-pointer hover:underline flex items-center gap-2"
-        >
-          <div className="flex -space-x-1">
-            {/* SỬA TẠI ĐÂY: Breakdown viết hoa */}
-            {reactionSummary?.Breakdown &&
-              Object.entries(reactionSummary.Breakdown)
-                .filter(([_, count]) => (count as number) > 0)
-                .slice(0, 3)
-                .map(([type]) => (
-                  <span key={type}>{REACTIONS.find(r => r.key === type.toLowerCase())?.emoji}</span>
-                ))
-            }
+      {/* REACTION & COMMENT COUNT */}
+      {/* REACTION & COMMENT COUNT */}
+      {(reactionCount > 0 || commentCount > 0) && ( // Dùng state commentCount ở đây
+        <div className="px-4 py-2 border-t border-[#3e4042] text-gray-400 text-sm flex justify-between items-center">
+          <div
+            onClick={openReactionModal}
+            className="cursor-pointer hover:underline flex items-center gap-2"
+          >
+            {/* Giữ nguyên phần icon cảm xúc của bạn... */}
+            <span>{reactionCount > 0 ? reactionCount : ""} lượt cảm xúc</span>
           </div>
-          {reactionCount} lượt cảm xúc
+
+          <div
+            onClick={() => setShowComments(true)}
+            className="cursor-pointer hover:underline"
+          >
+            {/* Chỉ hiện chữ khi có comment thực sự */}
+            {commentCount > 0 ? `${commentCount} bình luận` : ""}
+          </div>
         </div>
       )}
 
@@ -402,7 +437,10 @@ const Post = ({ post }: PostProps) => {
       {/* COMMENTS */}
       {showComments && (
         <div className="border-t border-[#3e4042]">
-          <CommentSection postId={post.id} onClose={() => setShowComments(false)} />
+          <CommentSection
+            postId={Number(post.id)}
+            onClose={() => setShowComments(false)}
+          />
         </div>
       )}
 
