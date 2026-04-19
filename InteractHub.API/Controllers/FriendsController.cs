@@ -1,4 +1,6 @@
 using System.Security.Claims;
+using InteractHub.API.Common.Extensions;
+using InteractHub.API.Common.Responses;
 using InteractHub.API.DTOs.Friendships;
 using InteractHub.API.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
@@ -17,149 +19,98 @@ public class FriendshipsController : ControllerBase
         _friendshipService = friendshipService;
     }
 
-    // ── 1. POST api/friendships/request ──────────────────────────
+    private string? GetUserId() => User.FindFirstValue(ClaimTypes.NameIdentifier);
+
     [HttpPost("request/{receiverId}")]
     [Authorize]
     public async Task<IActionResult> SendFriendRequest(string receiverId)
     {
-        var currentUserId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-        if (string.IsNullOrEmpty(currentUserId)) return Unauthorized();
+        var userId = GetUserId();
+        if (string.IsNullOrEmpty(userId)) return Unauthorized();
 
-        if (currentUserId == receiverId)
-            return BadRequest(new { message = "Bạn không thể gửi lời mời kết bạn cho chính mình." });
+        if (userId == receiverId)
+            return BadRequest(ApiResponse<object>.Fail("Bạn không thể gửi lời mời kết bạn cho chính mình."));
 
-        try
+        var result = await _friendshipService.SendRequestAsync(new FriendRequestDto
         {
-            var dto = new FriendRequestDto
-            {
-                RequesterId = currentUserId,
-                ReceiverId = receiverId
-            };
-
-            var result = await _friendshipService.SendRequestAsync(dto);
-            return Ok(result);
-        }
-        catch (Exception ex)
-        {
-            return BadRequest(new { message = ex.Message });
-        }
+            RequesterId = userId,
+            ReceiverId = receiverId
+        });
+        return result.ToActionResult(this);
     }
 
-    // ── 2. GET api/friendships/pending-requests ──────────────────
     [HttpGet("pending-requests")]
     [Authorize]
     public async Task<IActionResult> GetPendingRequests()
     {
-        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-        Console.WriteLine("USER ID: " + userId);
+        var userId = GetUserId();
         if (string.IsNullOrEmpty(userId)) return Unauthorized();
 
-        try
-        {
-            var requests = await _friendshipService.GetPendingRequestsAsync(userId);
-            return Ok(requests);
-        }
-        catch (Exception ex)
-        {
-            return BadRequest(new { message = ex.Message });
-        }
+        var result = await _friendshipService.GetPendingRequestsAsync(userId);
+        return result.ToActionResult(this);
     }
 
-    // ── 3. PUT api/friendships/respond ────────────────────────────
     [HttpPut("respond")]
     [Authorize]
     public async Task<IActionResult> RespondToRequest([FromBody] FriendshipResponseDto dto)
     {
         if (!ModelState.IsValid) return BadRequest(ModelState);
 
-        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        var userId = GetUserId();
         if (string.IsNullOrEmpty(userId)) return Unauthorized();
 
-        try
-        {
-            var result = await _friendshipService.RespondToRequestAsync(userId, dto);
-            return Ok(result);
-        }
-        catch (Exception ex)
-        {
-            return BadRequest(new { message = ex.Message });
-        }
+        var result = await _friendshipService.RespondToRequestAsync(userId, dto);
+        return result.ToActionResult(this);
     }
 
-    // ── 4. DELETE api/friendships/unfriend/{friendId} ─────────────
     [HttpDelete("unfriend/{friendId}")]
     [Authorize]
     public async Task<IActionResult> Unfriend(string friendId)
     {
-        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        var userId = GetUserId();
         if (string.IsNullOrEmpty(userId)) return Unauthorized();
 
-        try
-        {
-            await _friendshipService.UnfriendAsync(userId, friendId);
-            return Ok(new { message = "Đã xóa kết bạn thành công." });
-        }
-        catch (Exception ex)
-        {
-            return BadRequest(new { message = ex.Message });
-        }
+        var result = await _friendshipService.UnfriendAsync(userId, friendId);
+        return result.ToActionResult(this);
     }
+
     [HttpGet("status/{otherUserId}")]
     [Authorize]
     public async Task<IActionResult> GetStatus(string otherUserId)
     {
-        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        var userId = GetUserId();
         if (string.IsNullOrEmpty(userId)) return Unauthorized();
 
         var result = await _friendshipService.GetFriendshipStatusAsync(userId, otherUserId);
-        return Ok(result);
+        return result.ToActionResult(this);
     }
+
     [HttpDelete("cancel/{receiverId}")]
     [Authorize]
     public async Task<IActionResult> CancelRequest(string receiverId)
     {
-        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        var userId = GetUserId();
         if (string.IsNullOrEmpty(userId)) return Unauthorized();
 
-        try
-        {
-            await _friendshipService.CancelRequestAsync(userId, receiverId);
-            return Ok(new { message = "Đã hủy lời mời." });
-        }
-        catch (Exception ex)
-        {
-            return BadRequest(new { message = ex.Message });
-        }
+        var result = await _friendshipService.CancelRequestAsync(userId, receiverId);
+        return result.ToActionResult(this);
     }
-    // ── 5. GET api/friendships/list/{userId} ──────────────────────
+
     [HttpGet("list/{userId}")]
     public async Task<IActionResult> GetFriendsList(string userId)
     {
-        try
-        {
-            var friends = await _friendshipService.GetFriendsListAsync(userId);
-            return Ok(friends);
-        }
-        catch (Exception ex)
-        {
-            return BadRequest(new { message = ex.Message });
-        }
+        var result = await _friendshipService.GetFriendsListAsync(userId);
+        return result.ToActionResult(this);
     }
+
     [HttpDelete("reject/{requesterId}")]
     [Authorize]
     public async Task<IActionResult> RejectRequest(string requesterId)
     {
-        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        var userId = GetUserId();
         if (string.IsNullOrEmpty(userId)) return Unauthorized();
 
-        try
-        {
-            await _friendshipService.RejectRequestAsync(userId, requesterId);
-            return Ok(new { message = "Đã từ chối lời mời." });
-        }
-        catch (Exception ex)
-        {
-            return BadRequest(new { message = ex.Message });
-        }
+        var result = await _friendshipService.RejectRequestAsync(userId, requesterId);
+        return result.ToActionResult(this);
     }
 }

@@ -1,6 +1,7 @@
 import axiosInstance from "./axiosInstance";
 
-// ── Interface BE (PascalCase - khớp C# DTO) ──────────────────
+type ApiRes<T> = { Success: boolean; Message: string; Data: T };
+
 interface NotificationResponseDto {
   Id: number;
   Message: string;
@@ -10,7 +11,6 @@ interface NotificationResponseDto {
   CreatedAt: string;
 }
 
-// ── Interface FE (camelCase - dùng trong component) ───────────
 export interface NotificationItem {
   id: number;
   message: string;
@@ -20,7 +20,6 @@ export interface NotificationItem {
   createdAt: string;
 }
 
-// ── Map BE → FE ───────────────────────────────────────────────
 const mapNotification = (n: NotificationResponseDto): NotificationItem => ({
   id: n.Id,
   message: n.Message,
@@ -31,25 +30,25 @@ const mapNotification = (n: NotificationResponseDto): NotificationItem => ({
 });
 
 export const notificationService = {
-  // ── GET api/notifications ─────────────────────────────────
   getMyNotifications: () =>
     axiosInstance
-      .get<NotificationResponseDto[]>("/api/notifications")
-      .then((res) => ({ ...res, data: res.data.map(mapNotification) })),
+      .get<ApiRes<NotificationResponseDto[]>>("/api/notifications")
+      .then((res) => ({ ...res, data: res.data.Data.map(mapNotification) })),
 
-  // ── GET api/notifications/unread-count ───────────────────
   getUnreadCount: () =>
-    axiosInstance.get<{ unreadCount: number }>("/api/notifications/unread-count"),
+    axiosInstance
+      .get<ApiRes<number>>("/api/notifications/unread-count")
+      .then((res) => ({ ...res, data: res.data.Data })),
 
-  // ── PUT api/notifications/{id}/read ──────────────────────
   markAsRead: (id: number) =>
-    axiosInstance.put<{ message: string }>(`/api/notifications/${id}/read`),
+    axiosInstance
+      .put<ApiRes<null>>(`/api/notifications/${id}/read`),
 
-  // ── PUT api/notifications/read-all ───────────────────────
   markAllAsRead: () =>
-    axiosInstance.put<{ message: string }>("/api/notifications/read-all"),
+    axiosInstance
+      .put<ApiRes<null>>("/api/notifications/read-all"),
 
-  // ── DELETE api/notifications/{id} ────────────────────────
   deleteNotification: (id: number) =>
-    axiosInstance.delete<{ message: string }>(`/api/notifications/${id}`),
+    axiosInstance
+      .delete<ApiRes<null>>(`/api/notifications/${id}`),
 };

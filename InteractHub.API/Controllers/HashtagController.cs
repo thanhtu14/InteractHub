@@ -1,3 +1,4 @@
+using InteractHub.API.Common.Extensions;
 using InteractHub.API.Services.Interfaces;
 using Microsoft.AspNetCore.Mvc;
 
@@ -14,20 +15,17 @@ public class HashtagsController : ControllerBase
         _hashtagService = hashtagService;
     }
 
-    // GET: api/hashtags
     [HttpGet]
     public async Task<IActionResult> GetAll()
     {
         var result = await _hashtagService.GetAllAsync();
-        return Ok(result);
+        return result.ToActionResult(this);
     }
 
-    // GET: api/hashtags/search?tag=#abc
     [HttpGet("search")]
     public async Task<IActionResult> GetByTag([FromQuery] string tag)
     {
         var result = await _hashtagService.GetByTagAsync(tag);
-        if (result == null) return NotFound();
-        return Ok(result);
+        return result.ToActionResult(this);
     }
 }

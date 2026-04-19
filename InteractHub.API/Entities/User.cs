@@ -23,8 +23,8 @@ public class User : IdentityUser  // Kế thừa IdentityUser
 
     public string? CoverUrl { get; set; }   // ← thêm mới
 
-    [MaxLength(10)]
-    public string? Gender { get; set; } // "Male", "Female", "Other"
+    [MaxLength(20)]
+    public string? Gender { get; set; }
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
     // ===== Navigation =====

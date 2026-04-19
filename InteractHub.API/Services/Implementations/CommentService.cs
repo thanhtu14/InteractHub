@@ -1,3 +1,4 @@
+using InteractHub.API.Common.Responses;
 using InteractHub.API.DTOs.Comments;
 using InteractHub.API.Entities;
 using InteractHub.API.Repositories.Interfaces;
@@ -14,13 +15,13 @@ public class CommentService : ICommentService
         _commentRepo = commentRepo;
     }
 
-    public async Task<CommentResponseDTO?> AddAsync(string userId, CommentRequestDTO request)
+    public async Task<Result<CommentResponseDTO>> AddAsync(string userId, CommentRequestDTO request)
     {
-        if (string.IsNullOrWhiteSpace(userId) || string.IsNullOrWhiteSpace(request.Content))
-            return null;
+        if (string.IsNullOrWhiteSpace(request.Content))
+            return Result<CommentResponseDTO>.BadRequest("Nội dung bình luận không được trống.");
 
         if (!await _commentRepo.PostExistsAsync(request.PostId))
-            return null;
+            return Result<CommentResponseDTO>.NotFound("Bài viết không tồn tại.");
 
         var comment = new Comment
         {
@@ -44,83 +45,75 @@ public class CommentService : ICommentService
             parentName = parent?.User?.FullName;
         }
 
-        return saved == null ? null : MapToResponseSingle(saved, userId, parentName);
+        return saved == null
+            ? Result<CommentResponseDTO>.ServerError("Không thể tạo bình luận.")
+            : Result<CommentResponseDTO>.Ok(MapToResponseSingle(saved, userId, parentName), "Comment created successfully");
     }
 
-    public async Task<CommentResponseDTO?> UpdateAsync(string userId, int commentId, string content)
+    public async Task<Result<CommentResponseDTO>> UpdateAsync(string userId, int commentId, string content)
     {
         var comment = await _commentRepo.GetByIdAsync(commentId);
-        if (comment == null || comment.UserId != userId) return null;
+        if (comment == null)
+            return Result<CommentResponseDTO>.NotFound("Bình luận không tồn tại.");
+        if (comment.UserId != userId)
+            return Result<CommentResponseDTO>.BadRequest("Bạn không có quyền sửa bình luận này.");
 
         comment.Content = content.Trim();
         _commentRepo.Update(comment);
         await _commentRepo.SaveChangesAsync();
 
-        // QUAN TRỌNG: Phải dùng GetByIdWithUserAsync để nó Include(c => c.CommentLikes)
         var updated = await _commentRepo.GetByIdWithUserAsync(commentId);
-
-        // Trả về kèm theo userId để IsLikedByCurrentUser tính toán đúng
-        return updated == null ? null : MapToResponseSingle(updated, userId);
+        return updated == null
+            ? Result<CommentResponseDTO>.ServerError("Không thể cập nhật bình luận.")
+            : Result<CommentResponseDTO>.Ok(MapToResponseSingle(updated, userId), "Comment updated successfully");
     }
 
-    public async Task<bool> DeleteAsync(string userId, int commentId)
+    public async Task<Result<string>> DeleteAsync(string userId, int commentId)
     {
         var comment = await _commentRepo.GetByIdAsync(commentId);
-        if (comment == null || comment.UserId != userId) return false;
+        if (comment == null)
+            return Result<string>.NotFound("Bình luận không tồn tại.");
+        if (comment.UserId != userId)
+            return Result<string>.BadRequest("Bạn không có quyền xóa bình luận này.");
 
         comment.Status = 0;
         _commentRepo.Update(comment);
         await _commentRepo.SaveChangesAsync();
-        return true;
+        return Result<string>.Ok(message: "Comment deleted successfully");
     }
 
-    // ====================== PHẦN THAY ĐỔI CHÍNH ======================
-    public async Task<IEnumerable<CommentResponseDTO>> GetByPostIdAsync(int postId, string? currentUserId = null)
+    public async Task<Result<IEnumerable<CommentResponseDTO>>> GetByPostIdAsync(int postId, string? currentUserId = null)
     {
-        // 1. Lấy danh sách RootComments (mỗi root đã có Replies phẳng từ Repo)
         var rootComments = await _commentRepo.GetByPostIdAsync(postId);
 
-        // 2. Tạo một Dictionary chứa Tên của tất cả comment để tra cứu nhanh cho @Mention
-        // Chúng ta cần duyệt qua cả root và các con trong Replies để lấy đủ danh sách ID -> Name
         var nameMap = new Dictionary<int, string>();
         foreach (var root in rootComments)
         {
-            if (root.User != null) nameMap[root.Id] = root.User.FullName;
+            if (root.User != null) nameMap[root.Id] = root.User.FullName ?? string.Empty;
             if (root.Replies != null)
-            {
                 foreach (var reply in root.Replies)
-                {
-                    if (reply.User != null) nameMap[reply.Id] = reply.User.FullName;
-                }
-            }
+                    if (reply.User != null) nameMap[reply.Id] = reply.User.FullName ?? string.Empty;
         }
 
-        // 3. Map từ Entity sang DTO dùng Dictionary để lấy ParentUserName chính xác
-        return rootComments.Select(root => MapToResponseWithMap(root, currentUserId, nameMap));
+        return Result<IEnumerable<CommentResponseDTO>>.Ok(
+            rootComments.Select(root => MapToResponseWithMap(root, currentUserId, nameMap))
+        );
     }
 
-    // Hàm Map dành cho danh sách (Sử dụng Map tra cứu tên)
     private static CommentResponseDTO MapToResponseWithMap(Comment c, string? currentUserId, Dictionary<int, string> nameMap)
     {
         var dto = MapToBaseDto(c, currentUserId);
 
-        // Lấy tên cha trực tiếp từ Dictionary dựa trên ParentId
         if (c.ParentId.HasValue && nameMap.TryGetValue(c.ParentId.Value, out var pName))
-        {
             dto.ParentUserName = pName;
-        }
 
-        // Map danh sách Replies phẳng
         if (c.Replies != null)
         {
             dto.Replies = c.Replies.Select(r =>
             {
                 var replyDto = MapToBaseDto(r, currentUserId);
-                // Với mỗi thằng con, tìm tên của thằng cha trực tiếp của nó
                 if (r.ParentId.HasValue && nameMap.TryGetValue(r.ParentId.Value, out var replyPName))
-                {
                     replyDto.ParentUserName = replyPName;
-                }
                 return replyDto;
             }).ToList();
         }
@@ -128,7 +121,6 @@ public class CommentService : ICommentService
         return dto;
     }
 
-    // Hàm Map cho trường hợp thêm mới (Single)
     private static CommentResponseDTO MapToResponseSingle(Comment c, string? currentUserId, string? pName = null)
     {
         var dto = MapToBaseDto(c, currentUserId);
@@ -136,7 +128,6 @@ public class CommentService : ICommentService
         return dto;
     }
 
-    // Hàm Map các thuộc tính chung để tránh lặp code
     private static CommentResponseDTO MapToBaseDto(Comment c, string? currentUserId)
     {
         return new CommentResponseDTO

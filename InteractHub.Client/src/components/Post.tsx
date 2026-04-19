@@ -3,6 +3,7 @@ import CommentSection from "./CommentSection";
 import ReactionModal from "../components/ReactionDetailsModal";
 import { likeService } from "../services/likeService";
 import { commentService } from "../services/commetService";
+import ReportModal from "../components/ReportModal";
 
 interface PostProps {
   post: {
@@ -77,41 +78,32 @@ const Post = ({ post }: PostProps) => {
   const hoverTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
   const currentReaction = REACTIONS.find((r) => r.key === reaction);
   const [commentCount, setCommentCount] = useState(0);
+  const [isReportOpen, setIsReportOpen] = useState(false);
 
   // ── FETCH COMMENT COUNT ──────────────────────────────────────
   const fetchCommentCount = useCallback(async () => {
     try {
-      const res = await commentService.getByPost(post.id as number);
-      if (res.Success && res.Data) {
-        // Hàm đệ quy để đếm tất cả các node trong cây comment
-        const countAll = (list: any[]): number => {
-          return list.reduce((acc, curr) => {
-            const repliesCount = curr.Replies ? countAll(curr.Replies) : 0;
-            return acc + 1 + repliesCount;
-          }, 0);
-        };
-        setCommentCount(countAll(res.Data));
-      }
+        const data = await commentService.getByPost(post.id as number);
+        // ✅ data là CommentResponse[] trực tiếp
+        const countAll = (list: any[]): number =>
+            list.reduce((acc, curr) => acc + 1 + (curr.Replies ? countAll(curr.Replies) : 0), 0);
+        setCommentCount(countAll(data));
     } catch (error) {
-      console.error("Lỗi fetch comment:", error);
+        console.error("Lỗi fetch comment:", error);
     }
-  }, [post.id]);
+}, [post.id]);
   // ── LOGIC FETCH STATE (Hỗ trợ cả PascalCase và camelCase) ──────
   const fetchLikeState = useCallback(async () => {
     try {
-      const res = await likeService.getState(post.id as number);
-
-      // SỬA TẠI ĐÂY: Dùng Success và Data viết hoa
-      if (res.Success && res.Data) {
-        // UserReaction và Total cũng viết hoa theo LikeStateDto bên C#
-        setReaction(res.Data.UserReaction as ReactionKey);
-        setReactionCount(res.Data.Total || 0);
-        setReactionSummary(res.Data);
-      }
+        const data = await likeService.getState(post.id as number);
+        // ✅ data là LikeStateDto trực tiếp, không cần .Success hay .Data
+        setReaction(data.UserReaction as ReactionKey);
+        setReactionCount(data.Total || 0);
+        setReactionSummary(data);
     } catch (error) {
-      console.error("Lỗi:", error);
+        console.error("Lỗi:", error);
     }
-  }, [post.id]);
+}, [post.id]);
 useEffect(() => {
   let isMounted = true; // Biến cờ để tránh update state khi component đã unmount
 
@@ -153,6 +145,9 @@ useEffect(() => {
     if (hoverTimeout.current) clearTimeout(hoverTimeout.current);
     setShowPicker(true);
   };
+  const handleReport = () => {
+  setIsReportOpen(true);
+};
 
   const handleMouseLeavePicker = () => {
     if (hoverTimeout.current) clearTimeout(hoverTimeout.current);
@@ -161,16 +156,13 @@ useEffect(() => {
 
   const handleSelectReaction = async (key: string) => {
     try {
-      const res = await likeService.react(post.id as number, key);
-      // SỬA TẠI ĐÂY
-      if (res.Success) {
+        await likeService.react(post.id as number, key); // ✅ bỏ check res.Success
         await fetchLikeState();
-      }
     } catch (error) {
-      console.error("Lỗi:", error);
+        console.error("Lỗi:", error);
     }
     setShowPicker(false);
-  };
+};
 
   const handleClickLikeBtn = async () => {
     const targetKey = reaction ? reaction : "like";
@@ -432,7 +424,18 @@ useEffect(() => {
         <button className="flex-1 py-4 text-gray-300 hover:bg-[#3a3b3c]">
           🔗 Chia sẻ
         </button>
+        <button onClick={handleReport} className="flex-1 py-4 text-gray-300 hover:bg-[#3a3b3c]">🚩 Báo cáo</button>
       </div>
+      {/* Nút report trong menu 3 chấm */}
+    
+
+    {/* MODAL REPORT */}
+    {isReportOpen && (
+      <ReportModal 
+        postId={Number(post.id)} 
+        onClose={() => setIsReportOpen(false)} 
+      />
+    )}
 
       {/* COMMENTS */}
       {showComments && (

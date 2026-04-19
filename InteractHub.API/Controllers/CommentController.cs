@@ -1,8 +1,7 @@
-// Controllers/CommentsController.cs
+using InteractHub.API.Common.Extensions;
 using InteractHub.API.DTOs.Comments;
 using InteractHub.API.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
-using InteractHub.API.Common.Responses;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
 
@@ -14,11 +13,9 @@ namespace InteractHub.API.Controllers;
 public class CommentsController : ControllerBase
 {
     private readonly ICommentService _commentService;
-    private readonly ICommentLikeService _commentLikeService; // ✅ thêm
+    private readonly ICommentLikeService _commentLikeService;
 
-    public CommentsController(
-        ICommentService commentService,
-        ICommentLikeService commentLikeService) // ✅ thêm
+    public CommentsController(ICommentService commentService, ICommentLikeService commentLikeService)
     {
         _commentService = commentService;
         _commentLikeService = commentLikeService;
@@ -26,7 +23,6 @@ public class CommentsController : ControllerBase
 
     private string? GetUserId() => User.FindFirstValue(ClaimTypes.NameIdentifier);
 
-    // ── CREATE COMMENT ───────────────────────────────────────
     [HttpPost]
     public async Task<IActionResult> Create([FromBody] CommentRequestDTO request)
     {
@@ -34,13 +30,9 @@ public class CommentsController : ControllerBase
         if (string.IsNullOrEmpty(userId)) return Unauthorized();
 
         var result = await _commentService.AddAsync(userId, request);
-
-        return result == null
-            ? Ok(ApiResponse<object>.Fail("Không thể tạo bình luận"))
-            : Ok(ApiResponse<CommentResponseDTO>.Ok(result, "Comment created successfully"));
+        return result.ToActionResult(this);
     }
 
-    // ── UPDATE COMMENT ───────────────────────────────────────
     [HttpPut("{commentId}")]
     public async Task<IActionResult> Update(int commentId, [FromBody] CommentUpdateRequestDTO request)
     {
@@ -48,49 +40,34 @@ public class CommentsController : ControllerBase
         if (string.IsNullOrEmpty(userId)) return Unauthorized();
 
         var result = await _commentService.UpdateAsync(userId, commentId, request.Content);
-
-        return result == null
-            ? Ok(ApiResponse<object>.Fail("Không thể cập nhật bình luận hoặc bạn không có quyền"))
-            : Ok(ApiResponse<CommentResponseDTO>.Ok(result, "Comment updated successfully"));
+        return result.ToActionResult(this);
     }
 
-    // ── DELETE COMMENT ───────────────────────────────────────
     [HttpDelete("{commentId}")]
     public async Task<IActionResult> Delete(int commentId)
     {
         var userId = GetUserId();
         if (string.IsNullOrEmpty(userId)) return Unauthorized();
 
-        var success = await _commentService.DeleteAsync(userId, commentId);
-
-        return success
-            ? Ok(ApiResponse<object>.Ok(null, "Comment deleted successfully"))
-            : Ok(ApiResponse<object>.Fail("Không thể xóa bình luận hoặc bạn không có quyền"));
+        var result = await _commentService.DeleteAsync(userId, commentId);
+        return result.ToActionResult(this);
     }
 
-    // ── GET COMMENTS BY POST ─────────────────────────────────
     [HttpGet("post/{postId}")]
     [AllowAnonymous]
     public async Task<IActionResult> GetByPost(int postId)
     {
-        var userId = GetUserId();
-        var result = await _commentService.GetByPostIdAsync(postId, userId);
-        return Ok(ApiResponse<IEnumerable<CommentResponseDTO>>.Ok(result));
+        var result = await _commentService.GetByPostIdAsync(postId, GetUserId());
+        return result.ToActionResult(this);
     }
 
-    // ── LIKE / UNLIKE COMMENT ────────────────────────────────
     [HttpPost("{commentId}/like")]
     public async Task<IActionResult> ToggleLike(int commentId)
     {
         var userId = GetUserId();
         if (string.IsNullOrEmpty(userId)) return Unauthorized();
 
-        // ✅ Gọi _commentLikeService thay vì _commentService
         var result = await _commentLikeService.ToggleAsync(userId, commentId);
-
-        return result == null
-            ? Ok(ApiResponse<object>.Fail("Comment không tồn tại"))
-            : Ok(ApiResponse<CommentLikeResponseDTO>.Ok(result,
-                result.IsLiked ? "Liked" : "Unliked"));
+        return result.ToActionResult(this);
     }
 }

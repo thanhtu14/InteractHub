@@ -1,11 +1,13 @@
+using InteractHub.API.Common.Extensions;
+using InteractHub.API.Common.Responses;
 using InteractHub.API.DTOs.Likes;
 using InteractHub.API.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
-using InteractHub.API.Common.Responses;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
 
 namespace InteractHub.API.Controllers;
+
 [ApiController]
 [Route("api/likes")]
 [Authorize]
@@ -23,9 +25,7 @@ public class LikesController : ControllerBase
         if (string.IsNullOrEmpty(userId)) return Unauthorized();
 
         var result = await _service.ReactAsync(userId, request);
-        return result == null 
-            ? Ok(ApiResponse<object>.Ok(null, "Unliked")) 
-            : Ok(ApiResponse<LikeResponseDTO>.Ok(result, "Reacted"));
+        return result.ToActionResult(this);
     }
 
     [HttpGet("state/{postId}")]
@@ -33,7 +33,7 @@ public class LikesController : ControllerBase
     public async Task<IActionResult> GetState(int postId)
     {
         var result = await _service.GetLikeStateAsync(GetUserId(), postId);
-        return Ok(ApiResponse<LikeStateDTO>.Ok(result));
+        return result.ToActionResult(this);
     }
 
     [HttpGet("details/{postId}")]
@@ -41,6 +41,6 @@ public class LikesController : ControllerBase
     public async Task<IActionResult> GetDetails(int postId, [FromQuery] string? type)
     {
         var result = await _service.GetPostLikesDetailAsync(postId, type);
-        return Ok(ApiResponse<IEnumerable<LikeResponseDTO>>.Ok(result));
+        return result.ToActionResult(this);
     }
 }

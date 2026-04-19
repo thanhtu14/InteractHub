@@ -1,5 +1,4 @@
-
-// Services/Implementations/CommentLikeService.cs
+using InteractHub.API.Common.Responses;
 using InteractHub.API.DTOs.Comments;
 using InteractHub.API.Entities;
 using InteractHub.API.Repositories.Interfaces;
@@ -20,13 +19,12 @@ public class CommentLikeService : ICommentLikeService
         _commentRepo = commentRepo;
     }
 
-    public async Task<CommentLikeResponseDTO?> ToggleAsync(string userId, int commentId)
+    public async Task<Result<CommentLikeResponseDTO>> ToggleAsync(string userId, int commentId)
     {
-        // 1. Kiểm tra comment tồn tại
         var comment = await _commentRepo.GetByIdAsync(commentId);
-        if (comment == null) return null;
+        if (comment == null)
+            return Result<CommentLikeResponseDTO>.NotFound("Bình luận không tồn tại.");
 
-        // 2. Toggle like
         var isAlreadyLiked = await _likeRepo.ExistsAsync(userId, commentId);
 
         if (isAlreadyLiked)
@@ -47,15 +45,17 @@ public class CommentLikeService : ICommentLikeService
 
         await _likeRepo.SaveChangesAsync();
 
-        // 3. Reload để đếm like chính xác từ DB
         var updated = await _commentRepo.GetByIdWithUserAsync(commentId);
         var likeCount = updated?.CommentLikes?.Count ?? 0;
 
-        return new CommentLikeResponseDTO
-        {
-            CommentId = commentId,
-            LikeCount = likeCount,
-            IsLiked = !isAlreadyLiked
-        };
+        return Result<CommentLikeResponseDTO>.Ok(
+            new CommentLikeResponseDTO
+            {
+                CommentId = commentId,
+                LikeCount = likeCount,
+                IsLiked = !isAlreadyLiked
+            },
+            !isAlreadyLiked ? "Liked" : "Unliked"
+        );
     }
 }

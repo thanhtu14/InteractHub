@@ -1,3 +1,4 @@
+using InteractHub.API.Common.Responses;
 using InteractHub.API.DTOs.User;
 using InteractHub.API.Entities;
 using InteractHub.API.Services.Interfaces;
@@ -8,7 +9,7 @@ namespace InteractHub.API.Services.Implementations;
 public class UserService : IUserService
 {
     private readonly UserManager<User> _userManager;
-    private readonly INotificationService _notificationService; // Inject Service thông báo
+    private readonly INotificationService _notificationService;
 
     public UserService(UserManager<User> userManager, INotificationService notificationService)
     {
@@ -16,29 +17,25 @@ public class UserService : IUserService
         _notificationService = notificationService;
     }
 
-    // ── GET BY ID ─────────────────────────────────────────────
-    public async Task<UserDto?> GetByIdAsync(string id)
+    public async Task<Result<UserDto>> GetByIdAsync(string id)
     {
         var user = await _userManager.FindByIdAsync(id);
-        if (user == null) return null;
-
-        return MapToDto(user);
+        return user == null
+            ? Result<UserDto>.NotFound("Người dùng không tồn tại.")
+            : Result<UserDto>.Ok(MapToDto(user));
     }
 
-    // ── GET MY PROFILE ────────────────────────────────────────
-    public async Task<UserDto?> GetMyProfileAsync(string userId)
+    public async Task<Result<UserDto>> GetMyProfileAsync(string userId)
     {
         return await GetByIdAsync(userId);
     }
 
-    // ── UPDATE PROFILE ────────────────────────────────────────
-    public async Task<UserDto> UpdateProfileAsync(string userId, UpdateProfileDto dto)
+    public async Task<Result<UserDto>> UpdateProfileAsync(string userId, UpdateProfileDto dto)
     {
         var user = await _userManager.FindByIdAsync(userId);
         if (user == null)
-            throw new Exception("Người dùng không tồn tại.");
+            return Result<UserDto>.NotFound("Người dùng không tồn tại.");
 
-        // 1. Cập nhật thông tin cơ bản
         user.FullName    = dto.UserName;
         user.PhoneNumber = dto.Phone;
         user.DateOfBirth = dto.DateOfBirth;
@@ -50,68 +47,71 @@ public class UserService : IUserService
 
         var updateResult = await _userManager.UpdateAsync(user);
         if (!updateResult.Succeeded)
-            throw new Exception(string.Join(", ", updateResult.Errors.Select(e => e.Description)));
+            return Result<UserDto>.BadRequest(
+                string.Join(", ", updateResult.Errors.Select(e => e.Description))
+            );
 
-        // Thông báo cập nhật profile thành công (Tùy chọn)
-        // await _notificationService.CreateNotificationAsync(userId, "Thông tin cá nhân của bạn đã được cập nhật.", "SYSTEM", "/profile/me");
-
-        // 2. Đổi mật khẩu — chỉ xử lý khi người dùng điền NewPassword
         if (!string.IsNullOrWhiteSpace(dto.NewPassword))
         {
             if (string.IsNullOrWhiteSpace(dto.CurrentPassword))
-                throw new Exception("Vui lòng nhập mật khẩu hiện tại.");
+                return Result<UserDto>.BadRequest("Vui lòng nhập mật khẩu hiện tại.");
 
             if (dto.NewPassword != dto.ConfirmNewPassword)
-                throw new Exception("Mật khẩu xác nhận không khớp.");
+                return Result<UserDto>.BadRequest("Mật khẩu xác nhận không khớp.");
 
             var passwordResult = await _userManager.ChangePasswordAsync(
                 user, dto.CurrentPassword, dto.NewPassword);
 
             if (!passwordResult.Succeeded)
-                throw new Exception(string.Join(", ", passwordResult.Errors.Select(e => e.Description)));
+                return Result<UserDto>.BadRequest(
+                    string.Join(", ", passwordResult.Errors.Select(e => e.Description))
+                );
 
-            // --- THÔNG BÁO BẢO MẬT ---
-            await _notificationService.CreateNotificationAsync(userId, "Mật khẩu của bạn đã được thay đổi thành công.", "SECURITY", "/profile/settings");
+            await _notificationService.CreateNotificationAsync(
+                userId,
+                "Mật khẩu của bạn đã được thay đổi thành công.",
+                "SECURITY",
+                "/profile/settings"
+            );
         }
 
-        return MapToDto(user);
+        return Result<UserDto>.Ok(MapToDto(user), "Cập nhật thông tin thành công.");
     }
 
-    // ── UPDATE AVATAR ─────────────────────────────────────────
-    public async Task UpdateAvatarAsync(string userId, string avatarUrl)
+    public async Task<Result<string>> UpdateAvatarAsync(string userId, string avatarUrl)
     {
         var user = await _userManager.FindByIdAsync(userId);
         if (user == null)
-            throw new Exception("Người dùng không tồn tại.");
+            return Result<string>.NotFound("Người dùng không tồn tại.");
 
         user.ProfilePicture = avatarUrl;
 
         var result = await _userManager.UpdateAsync(user);
         if (!result.Succeeded)
-            throw new Exception(string.Join(", ", result.Errors.Select(e => e.Description)));
+            return Result<string>.BadRequest(
+                string.Join(", ", result.Errors.Select(e => e.Description))
+            );
 
-        // --- THÔNG BÁO CẬP NHẬT ẢNH ĐẠI DIỆN ---
-        // await _notificationService.CreateNotificationAsync(userId, "Ảnh đại diện của bạn đã được cập nhật.", "SYSTEM", "/profile/me");
+        return Result<string>.Ok(avatarUrl, "Cập nhật ảnh đại diện thành công.");
     }
 
-    // ── UPDATE COVER ──────────────────────────────────────────
-    public async Task UpdateCoverAsync(string userId, string coverUrl)
+    public async Task<Result<string>> UpdateCoverAsync(string userId, string coverUrl)
     {
         var user = await _userManager.FindByIdAsync(userId);
         if (user == null)
-            throw new Exception("Người dùng không tồn tại.");
+            return Result<string>.NotFound("Người dùng không tồn tại.");
 
         user.CoverUrl = coverUrl;
 
         var result = await _userManager.UpdateAsync(user);
         if (!result.Succeeded)
-            throw new Exception(string.Join(", ", result.Errors.Select(e => e.Description)));
+            return Result<string>.BadRequest(
+                string.Join(", ", result.Errors.Select(e => e.Description))
+            );
 
-        // --- THÔNG BÁO CẬP NHẬT ẢNH BÌA ---
-        // await _notificationService.CreateNotificationAsync(userId, "Ảnh bìa của bạn đã được cập nhật.", "SYSTEM", "/profile/me");
+        return Result<string>.Ok(coverUrl, "Cập nhật ảnh bìa thành công.");
     }
 
-    // ── MAPPER ────────────────────────────────────────────────
     private static UserDto MapToDto(User user) => new()
     {
         Id          = user.Id,
@@ -123,7 +123,7 @@ public class UserService : IUserService
         Bio         = user.Bio,
         DateOfBirth = user.DateOfBirth,
         Gender      = user.Gender,
-        CreatedAt = user.CreatedAt,
+        CreatedAt   = user.CreatedAt,
         Roles       = new List<string> { "User" },
     };
 }

@@ -1,4 +1,6 @@
 import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+
 import { commentService, type CommentResponse } from "../services/commetService";
 
 interface CommentProps {
@@ -48,6 +50,8 @@ const Comment: React.FC<CommentProps> = ({ comment, postId, onReplyAdded, depth 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [replies, setReplies] = useState<CommentResponse[]>(comment.Replies || []);
   const [showReplies, setShowReplies] = useState(false);
+  const navigate = useNavigate(); // ✅ thêm
+
 
   useEffect(() => {
     setIsLiked(comment.IsLikedByCurrentUser);
@@ -57,10 +61,11 @@ const Comment: React.FC<CommentProps> = ({ comment, postId, onReplyAdded, depth 
 
   const handleToggleLike = async () => {
     try {
-      const res = await commentService.toggleLike(comment.Id);
-      if (res.Success && res.Data) {
-        setIsLiked(res.Data.IsLiked);
-        setLikeCount(res.Data.LikeCount);
+      const data = await commentService.toggleLike(comment.Id);
+      // ✅ data là CommentLikeResponse trực tiếp
+      if (data) {
+        setIsLiked(data.IsLiked);
+        setLikeCount(data.LikeCount);
       }
     } catch (err) {
       console.error("Lỗi khi Like:", err);
@@ -73,18 +78,18 @@ const Comment: React.FC<CommentProps> = ({ comment, postId, onReplyAdded, depth 
 
     setIsSubmitting(true);
     try {
-      const res = await commentService.create({
+      const data = await commentService.create({
         PostId: postId,
         Content: replyContent.trim(),
         ParentId: comment.Id,
       });
-
-      if (res.Success && res.Data) {
+      // ✅ data là CommentResponse trực tiếp
+      if (data) {
         if (depth === 0) {
-          setReplies(prev => [...prev, res.Data!]);
+          setReplies(prev => [...prev, data]);
           setShowReplies(true);
         }
-        onReplyAdded?.(res.Data!);
+        onReplyAdded?.(data);
         setReplyContent("");
         setShowReplyInput(false);
       }
@@ -111,7 +116,10 @@ const Comment: React.FC<CommentProps> = ({ comment, postId, onReplyAdded, depth 
       <div className="flex-1 min-w-0">
         {/* Bong bóng bình luận - Tăng padding và text size */}
         <div className="bg-[#3a3b3c] rounded-2xl px-4 py-2.5 w-fit max-w-[95%] shadow-md">
-          <p className="text-white text-[14px] font-semibold hover:underline cursor-pointer mb-0.5">
+          <p
+            onClick={() => navigate(`/profile/${comment.UserId}`)} // ✅ thêm
+            className="text-white text-[14px] font-semibold hover:underline cursor-pointer mb-0.5"
+          >
             {comment.UserName}
           </p>
           <p className="text-gray-100 text-[15px] leading-relaxed break-words">

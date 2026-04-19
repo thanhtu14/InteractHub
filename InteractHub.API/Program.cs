@@ -51,6 +51,8 @@ builder.Services.AddScoped<ICommentRepository, CommentRepository>();
 builder.Services.AddScoped<ICommentService, CommentService>();
 builder.Services.AddScoped<ICommentLikeRepository, CommentLikeRepository>();
 builder.Services.AddScoped<ICommentLikeService, CommentLikeService>();
+builder.Services.AddScoped<IPostReportRepository, PostReportRepository>();
+builder.Services.AddScoped<IPostReportService, PostReportService>();
 
 // builder.Services.AddScoped<IPostService, PostService>();
 
@@ -166,11 +168,11 @@ if (app.Environment.IsDevelopment())
     app.UseSwagger();
     app.UseSwaggerUI();
 }
-
+app.UseMiddleware<ExceptionMiddleware>();
 app.UseHttpsRedirection();
 app.UseCors("AllowReactApp");
 app.UseCookiePolicy();
-app.UseMiddleware<ExceptionMiddleware>();
+
 
 
 // ── 11. Static Files ──────────────────────────────────────────────

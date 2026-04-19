@@ -93,7 +93,7 @@ public class AppDbContext : IdentityDbContext<User>
             .OnDelete(DeleteBehavior.Restrict);
             });
 
-            
+
 
             // --- 5. Friendship ---
             modelBuilder.Entity<Friendship>(entity =>
@@ -110,11 +110,16 @@ public class AppDbContext : IdentityDbContext<User>
             });
 
             // --- 6. PostReport ---
-            modelBuilder.Entity<PostReport>()
-                .HasOne(pr => pr.User)
-                .WithMany(u => u.PostReports)
-                .HasForeignKey(pr => pr.UserId)
-                .OnDelete(DeleteBehavior.Restrict);
+            modelBuilder.Entity<PostReport>(entity =>
+            {
+                  entity.HasOne(pr => pr.User)
+                  .WithMany(u => u.PostReports)
+                  .HasForeignKey(pr => pr.UserId)
+                  .OnDelete(DeleteBehavior.Restrict);
+                  entity.HasIndex(pr => new { pr.UserId, pr.PostId }).IsUnique();
+            });
+
+
 
             // --- 7. Hashtag & Many-to-Many ---
             modelBuilder.Entity<Hashtag>(entity =>

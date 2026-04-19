@@ -1,3 +1,4 @@
+using InteractHub.API.Common.Responses;
 using InteractHub.API.DTOs.Notification;
 using InteractHub.API.Entities;
 using InteractHub.API.Repositories.Interfaces;
@@ -14,46 +15,44 @@ public class NotificationService : INotificationService
         _notificationRepo = notificationRepo;
     }
 
-    // 1. Lấy danh sách thông báo của User (đã map sang DTO)
-    public async Task<IEnumerable<NotificationResponseDto>> GetNotificationsByUserIdAsync(string userId)
+    public async Task<Result<IEnumerable<NotificationResponseDto>>> GetNotificationsByUserIdAsync(string userId)
     {
         var notifications = await _notificationRepo.GetByUserIdAsync(userId);
-        
-        return notifications.Select(n => new NotificationResponseDto
-        {
-            Id = n.Id,
-            Message = n.Message,
-            Type = n.Type,
-            Link = n.Link,
-            IsRead = n.IsRead ?? false,
-            CreatedAt = n.CreatedAt
-        });
+        return Result<IEnumerable<NotificationResponseDto>>.Ok(
+            notifications.Select(n => new NotificationResponseDto
+            {
+                Id = n.Id,
+                Message = n.Message,
+                Type = n.Type,
+                Link = n.Link,
+                IsRead = n.IsRead ?? false,
+                CreatedAt = n.CreatedAt
+            })
+        );
     }
 
-    // 2. Đếm số thông báo chưa đọc
-    public async Task<int> GetUnreadCountAsync(string userId)
+    public async Task<Result<int>> GetUnreadCountAsync(string userId)
     {
-        return await _notificationRepo.CountUnreadAsync(userId);
+        var count = await _notificationRepo.CountUnreadAsync(userId);
+        return Result<int>.Ok(count);
     }
 
-    // 3. Đánh dấu một thông báo là đã đọc
-    public async Task<bool> MarkAsReadAsync(int notificationId, string userId)
+    public async Task<Result<string>> MarkAsReadAsync(int notificationId, string userId)
     {
         var notification = await _notificationRepo.GetByIdAsync(notificationId, userId);
-        if (notification == null) return false;
+        if (notification == null)
+            return Result<string>.NotFound("Không tìm thấy thông báo hoặc bạn không có quyền.");
 
         notification.IsRead = true;
         _notificationRepo.Update(notification);
-        return await _notificationRepo.SaveChangesAsync();
+        await _notificationRepo.SaveChangesAsync();
+        return Result<string>.Ok(message: "Đã đánh dấu thông báo là đã đọc.");
     }
 
-    // 4. Đánh dấu tất cả là đã đọc
-    public async Task<bool> MarkAllAsReadAsync(string userId)
+    public async Task<Result<string>> MarkAllAsReadAsync(string userId)
     {
         var notifications = await _notificationRepo.GetByUserIdAsync(userId);
-        var unreadOnes = notifications.Where(n => n.IsRead == false || n.IsRead == null);
-
-        if (!unreadOnes.Any()) return true;
+        var unreadOnes = notifications.Where(n => n.IsRead == false || n.IsRead == null).ToList();
 
         foreach (var n in unreadOnes)
         {
@@ -61,20 +60,22 @@ public class NotificationService : INotificationService
             _notificationRepo.Update(n);
         }
 
-        return await _notificationRepo.SaveChangesAsync();
+        await _notificationRepo.SaveChangesAsync();
+        return Result<string>.Ok(message: "Đã đánh dấu tất cả thông báo là đã đọc.");
     }
 
-    // 5. Xóa thông báo
-    public async Task<bool> DeleteNotificationAsync(int notificationId, string userId)
+    public async Task<Result<string>> DeleteNotificationAsync(int notificationId, string userId)
     {
         var notification = await _notificationRepo.GetByIdAsync(notificationId, userId);
-        if (notification == null) return false;
+        if (notification == null)
+            return Result<string>.NotFound("Không thể xóa thông báo.");
 
         _notificationRepo.Delete(notification);
-        return await _notificationRepo.SaveChangesAsync();
+        await _notificationRepo.SaveChangesAsync();
+        return Result<string>.Ok(message: "Đã xóa thông báo thành công.");
     }
 
-    // 6. Tạo thông báo mới (Hàm này sẽ được các Service khác gọi)
+    // Không đổi vì được gọi nội bộ từ các Service khác
     public async Task CreateNotificationAsync(string userId, string message, string type, string? link)
     {
         var notification = new Notification

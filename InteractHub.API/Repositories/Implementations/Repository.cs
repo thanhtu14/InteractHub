@@ -2,6 +2,7 @@ using InteractHub.API.Repositories.Interfaces;
 using InteractHub.API.Data;
 using Microsoft.EntityFrameworkCore;
 namespace InteractHub.API.Repositories.Implementations;
+
 public class Repository<T> : IRepository<T> where T : class
 {
     protected readonly AppDbContext _context;
@@ -28,6 +29,9 @@ public class Repository<T> : IRepository<T> where T : class
     public void Delete(T entity) =>
         _dbSet.Remove(entity);
 
-    public async Task SaveChangesAsync() =>
-        await _context.SaveChangesAsync();
+    // Sửa Task thành Task<int>
+    public async Task<int> SaveChangesAsync()
+    {
+        return await _context.SaveChangesAsync();
+    }
 }

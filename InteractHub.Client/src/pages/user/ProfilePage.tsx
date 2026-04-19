@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { FaTimes } from "react-icons/fa";
+import { AxiosError } from "axios";
 
 import Navbar from "../../components/Navigation";
 import ProfileHeader from "../../components/ProfileHeader";
@@ -15,10 +16,11 @@ import PostManagerModal from "../../components/PostManagerModal";
 import { userService } from "../../services/userService";
 import { friendshipService } from "../../services/friendshipService";
 import type { User } from "../../schemas/user.schema";
+import { useAuth } from "../../context/useAuth"; // ← thêm dòng này
 
 const ProfilePage: React.FC = () => {
   const [user, setUser] = useState<User | null>(null);
-  const [loggedInUser, setLoggedInUser] = useState<User | null>(null);
+  const { user: loggedInUser, login, token } = useAuth(); // ✅
   const [isFriend, setIsFriend] = useState(false);
   const [showModal, setShowModal] = useState(false);
   const [showManager, setShowManager] = useState(false);
@@ -38,16 +40,12 @@ const ProfilePage: React.FC = () => {
         const data = res.data;
         setUser(data);
 
-        if (!paramId) {
-          setLoggedInUser(data);
-          localStorage.setItem("interact_hub_user", JSON.stringify(data));
-        } else {
-          const storedUser = localStorage.getItem("interact_hub_user");
-          if (storedUser) setLoggedInUser(JSON.parse(storedUser));
-        }
-      } catch (err: any) {
+
+      } catch (err) {
         console.error("Lỗi fetch user profile:", err);
-        if (err.response?.status === 401) navigate("/login");
+        if (err instanceof AxiosError) {
+          if (err.response?.status === 401) navigate("/login");
+        }
       } finally {
         setLoading(false);
       }
@@ -80,7 +78,7 @@ const ProfilePage: React.FC = () => {
   // ── 4. Xử lý sau khi update ───────────────────────────────
   const handleSubmitSuccess = (updatedUser: User) => {
     setUser(updatedUser);
-    setLoggedInUser(updatedUser);
+    login(updatedUser, token!); // ✅ update context thay vì setLoggedInUser
     setTimeout(() => setShowModal(false), 1000);
   };
 

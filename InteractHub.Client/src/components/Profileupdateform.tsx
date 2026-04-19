@@ -40,11 +40,10 @@ interface ToastProps {
 
 const Toast: React.FC<ToastProps> = ({ message, type }) => (
   <div
-    className={`fixed bottom-6 right-6 z-[9999] flex items-center gap-3 px-5 py-4 rounded-xl shadow-2xl border text-sm font-semibold animate-in slide-in-from-bottom-4 duration-300 ${
-      type === "success"
-        ? "bg-[#1a3a2a] border-green-600 text-green-300"
-        : "bg-[#3a1a1a] border-red-600 text-red-300"
-    }`}
+    className={`fixed bottom-6 right-6 z-[9999] flex items-center gap-3 px-5 py-4 rounded-xl shadow-2xl border text-sm font-semibold animate-in slide-in-from-bottom-4 duration-300 ${type === "success"
+      ? "bg-[#1a3a2a] border-green-600 text-green-300"
+      : "bg-[#3a1a1a] border-red-600 text-red-300"
+      }`}
   >
     {type === "success" ? (
       <FaCheckCircle className="text-green-400 shrink-0" size={16} />
@@ -72,11 +71,10 @@ const InputField = React.forwardRef<HTMLInputElement, InputFieldProps>(
       <input
         ref={ref}
         type={type}
-        className={`w-full px-4 py-3 bg-[#3a3b3c] border rounded-xl text-gray-200 placeholder-gray-500 focus:outline-none focus:ring-2 transition-all text-base ${
-          error
-            ? "border-red-500 focus:ring-red-500/20"
-            : "border-[#4e4f50] focus:ring-[#1877f2]/50"
-        } ${className}`}
+        className={`w-full px-4 py-3 bg-[#3a3b3c] border rounded-xl text-gray-200 placeholder-gray-500 focus:outline-none focus:ring-2 transition-all text-base ${error
+          ? "border-red-500 focus:ring-red-500/20"
+          : "border-[#4e4f50] focus:ring-[#1877f2]/50"
+          } ${className}`}
         {...rest}
       />
       {hint && !error && (
@@ -195,11 +193,11 @@ const ProfileUpdateForm: React.FC<ProfileUpdateFormProps> = ({
 
       if (avatarFile) {
         const uploadRes = await userService.uploadAvatar(avatarFile);
-        currentAvatarUrl = uploadRes.data.url;
+        currentAvatarUrl = uploadRes.data; // ✅ string trực tiếp
       }
       if (coverFile) {
         const uploadRes = await userService.uploadCover(coverFile);
-        currentCoverUrl = uploadRes.data.url;
+        currentCoverUrl = uploadRes.data; // ✅ string trực tiếp
       }
 
       const payload = {
@@ -212,21 +210,20 @@ const ProfileUpdateForm: React.FC<ProfileUpdateFormProps> = ({
         CoverUrl: currentCoverUrl || null,
         ...(data.newPassword && data.newPassword.trim() !== ""
           ? {
-              CurrentPassword: data.currentPassword,
-              NewPassword: data.newPassword,
-              ConfirmNewPassword: data.confirmNewPassword,
-            }
+            CurrentPassword: data.currentPassword,
+            NewPassword: data.newPassword,
+            ConfirmNewPassword: data.confirmNewPassword,
+          }
           : {}),
       };
 
       const res = await userService.updateProfile(payload as unknown as ProfileUpdateData);
-
       showToast("Cập nhật thành công! 🎉", "success");
-      onSubmitSuccess?.(res.data);
+      onSubmitSuccess?.(res.data); // ✅ res.data là User trực tiếp
       setTimeout(() => window.location.reload(), 900);
     } catch (err: unknown) {
-      const error = err as { response?: { data?: { message?: string } } };
-      const msg = error.response?.data?.message || "Có lỗi xảy ra";
+      const error = err as { response?: { data?: { Message?: string } } };
+      const msg = error.response?.data?.Message || "Có lỗi xảy ra";
       showToast(msg, "error");
       if (msg.toLowerCase().includes("mật khẩu")) {
         setError("currentPassword", { message: msg });
@@ -382,13 +379,12 @@ const ProfileUpdateForm: React.FC<ProfileUpdateFormProps> = ({
                     <div className="space-y-2 px-1">
                       <div className="h-1.5 bg-[#4e4f50] rounded-full overflow-hidden">
                         <div
-                          className={`h-full transition-all duration-300 ${
-                            strength.score <= 2
-                              ? "bg-red-500"
-                              : strength.score <= 4
+                          className={`h-full transition-all duration-300 ${strength.score <= 2
+                            ? "bg-red-500"
+                            : strength.score <= 4
                               ? "bg-yellow-500"
                               : "bg-green-500"
-                          }`}
+                            }`}
                           style={{ width: `${(strength.score / 5) * 100}%` }}
                         />
                       </div>

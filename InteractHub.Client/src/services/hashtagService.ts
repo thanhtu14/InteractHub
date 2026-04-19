@@ -1,19 +1,24 @@
 import axiosInstance from "./axiosInstance";
 
-// ── Interface chuẩn camelCase (Khớp trực tiếp với JSON từ BE) ──
+interface ApiResponse<T> {
+  Success: boolean;
+  Message: string;
+  Data: T;
+}
+
 export interface HashtagItem {
-  id: number;
-  tag: string;
+  Id: number;
+  Tag: string;
 }
 
 export const hashtagService = {
-  // ── GET api/hashtags ──────────────────────────────────────
-  // Lấy toàn bộ danh sách hashtag
   getAllHashtags: () =>
-    axiosInstance.get<HashtagItem[]>("/api/hashtags"),
+    axiosInstance
+      .get<ApiResponse<HashtagItem[]>>("/api/hashtags")
+      .then((res) => ({ ...res, data: res.data.Data })),
 
-  // ── GET api/hashtags/search?tag=#abc ──────────────────────
-  // Tìm kiếm hashtag cụ thể
   getByTag: (tag: string) =>
-    axiosInstance.get<HashtagItem>(`/api/hashtags/search`, { params: { tag } }),
+    axiosInstance
+      .get<ApiResponse<HashtagItem>>("/api/hashtags/search", { params: { tag } })
+      .then((res) => ({ ...res, data: res.data.Data })),
 };

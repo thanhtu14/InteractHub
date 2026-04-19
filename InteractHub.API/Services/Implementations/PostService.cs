@@ -1,4 +1,4 @@
-using System.Text.RegularExpressions;
+using InteractHub.API.Common.Responses;
 using InteractHub.API.DTOs.Posts;
 using InteractHub.API.Entities;
 using InteractHub.API.Repositories.Interfaces;
@@ -25,8 +25,7 @@ public class PostService : IPostService
         _postHashtagRepo = postHashtagRepo;
     }
 
-    // ================= CREATE =================
-    public async Task<PostResponseDto> CreatePostAsync(string userId, PostCreateDto dto)
+    public async Task<Result<PostResponseDto>> CreatePostAsync(string userId, PostCreateDto dto)
     {
         var post = new Post
         {
@@ -38,13 +37,11 @@ public class PostService : IPostService
             PostMedias = new List<PostMedia>()
         };
 
-        // Upload media
         if (dto.Files != null && dto.Files.Any())
         {
             foreach (var file in dto.Files)
             {
                 var url = await _mediaService.SaveFileAsync(file, "posts");
-
                 if (!string.IsNullOrEmpty(url))
                 {
                     post.PostMedias.Add(new PostMedia
@@ -58,25 +55,23 @@ public class PostService : IPostService
 
         await _postRepo.AddAsync(post);
         await _postRepo.SaveChangesAsync();
-
-        // 🔥 HANDLE HASHTAG
         await HandleHashtagsAsync(post.Id, post.Content);
 
         var result = await _postRepo.GetPostDetailsByIdAsync(post.Id);
-        return MapToDto(result ?? post);
+        return Result<PostResponseDto>.Ok(MapToDto(result ?? post), "Tạo bài viết thành công.");
     }
 
-    // ================= UPDATE =================
-    public async Task<PostResponseDto> UpdatePostAsync(int postId, string userId, PostUpdateDto dto)
+    public async Task<Result<PostResponseDto>> UpdatePostAsync(int postId, string userId, PostUpdateDto dto)
     {
         var post = await _postRepo.GetPostDetailsByIdAsync(postId);
-        if (post == null) throw new Exception("Bài viết không tồn tại.");
-        if (post.UserId != userId) throw new Exception("Không có quyền.");
+        if (post == null)
+            return Result<PostResponseDto>.NotFound("Bài viết không tồn tại.");
+        if (post.UserId != userId)
+            return Result<PostResponseDto>.BadRequest("Bạn không có quyền chỉnh sửa bài viết này.");
 
         if (dto.Content != null) post.Content = dto.Content;
         if (dto.Status != null) post.Status = dto.Status.Value;
 
-        // XÓA MEDIA
         if (dto.DeleteMediaUrls != null && dto.DeleteMediaUrls.Any())
         {
             var deleteList = post.PostMedias
@@ -90,13 +85,11 @@ public class PostService : IPostService
             }
         }
 
-        // THÊM MEDIA
         if (dto.NewFiles != null && dto.NewFiles.Any())
         {
             foreach (var file in dto.NewFiles)
             {
                 var url = await _mediaService.SaveFileAsync(file, "posts");
-
                 if (!string.IsNullOrEmpty(url))
                 {
                     post.PostMedias.Add(new PostMedia
@@ -108,7 +101,6 @@ public class PostService : IPostService
             }
         }
 
-        // 🔥 UPDATE HASHTAG
         if (dto.Content != null)
         {
             await _postHashtagRepo.DeleteByPostIdAsync(post.Id);
@@ -118,72 +110,64 @@ public class PostService : IPostService
         await _postRepo.SaveChangesAsync();
 
         var updated = await _postRepo.GetPostDetailsByIdAsync(post.Id);
-        return MapToDto(updated ?? post);
+        return Result<PostResponseDto>.Ok(MapToDto(updated ?? post), "Cập nhật bài viết thành công.");
     }
 
-    // ================= DELETE =================
-    public async Task DeletePostAsync(int postId, string userId)
+    public async Task<Result<string>> DeletePostAsync(int postId, string userId)
     {
         var post = await _postRepo.GetPostDetailsByIdAsync(postId);
-        if (post == null) throw new Exception("Không tìm thấy.");
-        if (post.UserId != userId) throw new Exception("Không có quyền.");
+        if (post == null)
+            return Result<string>.NotFound("Bài viết không tồn tại.");
+        if (post.UserId != userId)
+            return Result<string>.BadRequest("Bạn không có quyền xóa bài viết này.");
 
         if (post.PostMedias != null)
-        {
             foreach (var m in post.PostMedias)
-            {
                 _mediaService.DeleteFile(m.Url);
-            }
-        }
 
         await _postHashtagRepo.DeleteByPostIdAsync(post.Id);
-
         _postRepo.Delete(post);
         await _postRepo.SaveChangesAsync();
+        return Result<string>.Ok(message: "Xóa bài viết thành công.");
     }
 
-    // ================= GET =================
-    public async Task<IEnumerable<PostResponseDto>> GetTimelineAsync()
+    public async Task<Result<IEnumerable<PostResponseDto>>> GetTimelineAsync()
     {
         var posts = await _postRepo.GetPostsWithDetailsAsync();
-        return posts.Select(MapToDto);
+        return Result<IEnumerable<PostResponseDto>>.Ok(posts.Select(MapToDto));
     }
 
-    public async Task<IEnumerable<PostResponseDto>> GetPostsByUserIdAsync(string userId)
+    public async Task<Result<IEnumerable<PostResponseDto>>> GetPostsByUserIdAsync(string userId)
     {
         var posts = await _postRepo.GetPostsByUserIdAsync(userId);
-        return posts.Select(MapToDto);
+        return Result<IEnumerable<PostResponseDto>>.Ok(posts.Select(MapToDto));
     }
 
-    public async Task<PostResponseDto> GetPostByIdAsync(int postId)
+    public async Task<Result<PostResponseDto>> GetPostByIdAsync(int postId)
     {
         var post = await _postRepo.GetPostDetailsByIdAsync(postId);
-        if (post == null) throw new Exception("Không tồn tại.");
-        return MapToDto(post);
+        if (post == null)
+            return Result<PostResponseDto>.NotFound("Bài viết không tồn tại.");
+        return Result<PostResponseDto>.Ok(MapToDto(post));
     }
 
-    // ================= HASHTAG CORE =================
     private async Task HandleHashtagsAsync(int postId, string? content)
-{
-    if (string.IsNullOrWhiteSpace(content)) return;
-
-    // 👉 Dùng service đã có (đã xử lý: extract + create nếu chưa tồn tại)
-    var hashtags = await _hashtagService.ExtractHashtagsAsync(content);
-
-    if (hashtags == null || !hashtags.Any()) return;
-
-    // 👉 Map sang bảng Post_Hashtag
-    var mappings = hashtags.Select(tag => new Post_Hashtag
     {
-        PostId = postId,
-        HashtagId = tag.Id
-    }).ToList();
+        if (string.IsNullOrWhiteSpace(content)) return;
 
-    await _postHashtagRepo.AddRangeAsync(mappings);
-    await _postHashtagRepo.SaveChangesAsync();
-}
+        var hashtags = await _hashtagService.ExtractHashtagsAsync(content);
+        if (hashtags == null || !hashtags.Any()) return;
 
-    // ================= DTO =================
+        var mappings = hashtags.Select(tag => new Post_Hashtag
+        {
+            PostId = postId,
+            HashtagId = tag.Id
+        }).ToList();
+
+        await _postHashtagRepo.AddRangeAsync(mappings);
+        await _postHashtagRepo.SaveChangesAsync();
+    }
+
     private static PostResponseDto MapToDto(Post p) => new()
     {
         Id = p.Id,

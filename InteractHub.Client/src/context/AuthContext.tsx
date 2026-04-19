@@ -6,10 +6,12 @@ export interface User {
   Username: string;
   Email: string;
   Roles: string[];
-  AvatarUrl?: string;
-  CoverUrl?: string;
-  Bio?: string;
-  DateOfBirth?: string;
+  Gender?: string;
+  Phone?: string | null;
+  AvatarUrl?: string | null;  // ✅ thêm null
+  CoverUrl?: string | null;   // ✅ thêm null
+  Bio?: string | null;        // ✅ thêm null
+  DateOfBirth?: string | null;// ✅ thêm null
 }
 
 export interface AuthContextType {

@@ -1,3 +1,4 @@
+using InteractHub.API.Common.Responses;
 using InteractHub.API.DTOs.Friendships;
 using InteractHub.API.DTOs.User;
 
@@ -5,21 +6,12 @@ namespace InteractHub.API.Services.Interfaces;
 
 public interface IFriendshipService
 {
-    // Gửi lời mời kết bạn
-    Task<FriendshipResponseDto> SendRequestAsync(FriendRequestDto dto);
-
-    // Lấy danh sách lời mời đang chờ (người khác gửi cho mình)
-    Task<IEnumerable<FriendshipResponseDto>> GetPendingRequestsAsync(string userId);
-
-    // Chấp nhận hoặc từ chối lời mời
-    Task<FriendshipResponseDto> RespondToRequestAsync(string userId, FriendshipResponseDto dto);
-
-    // Hủy kết bạn
-    Task UnfriendAsync(string userId, string friendId);
-
-    Task<FriendshipStatusDto> GetFriendshipStatusAsync(string userId, string otherUserId);
-    Task CancelRequestAsync(string userId, string receiverId);
-    // Lấy danh sách bạn bè của một người dùng
-    Task<IEnumerable<UserDto>> GetFriendsListAsync(string userId);
-    Task RejectRequestAsync(string userId, string requesterId);
+    Task<Result<FriendshipResponseDto>> SendRequestAsync(FriendRequestDto dto);
+    Task<Result<IEnumerable<FriendshipResponseDto>>> GetPendingRequestsAsync(string userId);
+    Task<Result<FriendshipResponseDto>> RespondToRequestAsync(string userId, FriendshipResponseDto dto);
+    Task<Result<string>> UnfriendAsync(string userId, string friendId);
+    Task<Result<FriendshipStatusDto>> GetFriendshipStatusAsync(string userId, string otherUserId);
+    Task<Result<string>> CancelRequestAsync(string userId, string receiverId);
+    Task<Result<IEnumerable<UserDto>>> GetFriendsListAsync(string userId);
+    Task<Result<string>> RejectRequestAsync(string userId, string requesterId);
 }

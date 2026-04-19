@@ -13,19 +13,13 @@ const CommentSection: React.FC<CommentSectionProps> = ({ postId, onClose }) => {
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Lấy danh sách bình luận
   useEffect(() => {
     const fetchComments = async () => {
       setLoading(true);
       setError(null);
       try {
-        const res = await commentService.getByPost(postId);
-        if (res.Success && res.Data) {
-          console.log("Dữ liệu bình luận từ API:", res.Data);
-          setComments(res.Data);
-        } else {
-          setError(res.Message || "Không thể tải bình luận");
-        }
+        const data = await commentService.getByPost(postId);
+        setComments(data ?? []);
       } catch (err) {
         console.error(err);
         setError("Không thể tải bình luận.");
@@ -37,23 +31,19 @@ const CommentSection: React.FC<CommentSectionProps> = ({ postId, onClose }) => {
     fetchComments();
   }, [postId]);
 
-  // Thêm bình luận mới (cấp 1)
   const handleAddComment = async () => {
     if (!newComment.trim()) return;
 
     try {
-      const res = await commentService.create({
+      const data = await commentService.create({
         PostId: postId,
         Content: newComment.trim(),
         ParentId: null,
       });
 
-      if (res.Success && res.Data) {
-        // Thêm comment mới vào đầu danh sách (giống Facebook)
-        setComments((prev) => [res.Data!, ...prev]);
+      if (data) {
+        setComments((prev) => [data, ...prev]);
         setNewComment("");
-      } else {
-        alert(res.Message || "Không thể đăng bình luận");
       }
     } catch (err) {
       console.error("Lỗi gửi bình luận:", err);
@@ -61,17 +51,12 @@ const CommentSection: React.FC<CommentSectionProps> = ({ postId, onClose }) => {
     }
   };
 
-  // Callback khi có reply mới được thêm (từ component Comment con)
-  const handleReplyAdded = (newReply: CommentResponse) => {
-    // Hiện tại component Comment đã tự thêm reply vào cây, 
-    // nên ta không cần làm gì thêm ở đây (đã xử lý recursive)
-    // Nếu muốn refresh toàn bộ thì có thể gọi lại fetchComments()
-  };
+ 
 
   return (
     <div className="fixed inset-0 bg-black/50 flex justify-center items-center z-[1000]">
       <div className="bg-[#242526] w-[450px] rounded-2xl p-5 shadow-2xl relative border border-[#3e4042]">
-        
+
         {/* Nút đóng */}
         <button
           className="absolute top-4 right-4 text-gray-400 text-xl hover:text-white transition-colors"
@@ -89,7 +74,7 @@ const CommentSection: React.FC<CommentSectionProps> = ({ postId, onClose }) => {
         <div className="max-h-[420px] overflow-y-auto mb-6 space-y-1 pr-2 custom-scrollbar">
           {loading ? (
             <div className="flex justify-center py-8">
-              <div className="animate-spin rounded-full h-7 w-7 border-b-2 border-[#1877f2]"></div>
+              <div className="animate-spin rounded-full h-7 w-7 border-b-2 border-[#1877f2]" />
             </div>
           ) : error ? (
             <p className="text-center text-red-500 py-4">{error}</p>
@@ -100,15 +85,14 @@ const CommentSection: React.FC<CommentSectionProps> = ({ postId, onClose }) => {
               <Comment
                 key={comment.Id}
                 comment={comment}
-                postId={postId}                    // ← Truyền thêm postId
-                onReplyAdded={handleReplyAdded}    // ← Truyền callback
+                postId={postId}
                 parentUserName={comment.ParentUserName}
               />
             ))
           )}
         </div>
 
-        {/* Input thêm comment cấp 1 */}
+        {/* Input thêm comment */}
         <div className="flex gap-2 border-t border-[#3e4042] pt-4">
           <input
             type="text"

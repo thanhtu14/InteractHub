@@ -124,7 +124,7 @@ const HomePage: React.FC = () => {
                     key="friends-list"
                     className="animate-in fade-in slide-in-from-right-5 duration-500"
                   >
-                    <FriendList />
+                    <FriendList userId={String(user?.Id)} />
                   </div>
                 ) : (
                   <div

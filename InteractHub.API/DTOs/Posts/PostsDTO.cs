@@ -39,3 +39,19 @@ public class PostUpdateDto
     // Danh sách file mới upload thêm
     public List<IFormFile>? NewFiles { get; set; }
 }
+public class PostReportRequestDTO
+{
+    public int PostId { get; set; }
+    public string Reason { get; set; } = string.Empty;
+}
+
+public class PostReportResponseDTO
+{
+    public int Id { get; set; }
+    public int PostId { get; set; }
+    public string UserId { get; set; } = string.Empty;
+    public string UserName { get; set; } = string.Empty;
+    public string Reason { get; set; } = string.Empty;
+    public int Status { get; set; }
+    public DateTime CreatedAt { get; set; }
+}
