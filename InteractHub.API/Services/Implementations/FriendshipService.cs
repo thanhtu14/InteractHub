@@ -35,12 +35,14 @@ public class FriendshipService : IFriendshipService
         await _friendshipRepo.AddAsync(friendship);
         await _friendshipRepo.SaveChangesAsync();
 
-        await _notificationService.CreateNotificationAsync(
-            dto.ReceiverId,
-            "Bạn có một lời mời kết bạn mới.",
-            "FRIEND_REQUEST",
-            $"/profile/{dto.RequesterId}"
-        );
+        await _notificationService.CreateOrUpdateInteractionNotificationAsync(
+        dto.ReceiverId,             // Người nhận
+        dto.RequesterId,            // Người gửi (LastActor)
+        "FRIEND_REQUEST",           // Loại
+        $"/profile/{dto.RequesterId}", // Link (Dùng cái này để định danh gom nhóm)
+        "đã gửi cho bạn một lời mời kết bạn mới.", // Tin nhắn
+        1                           // Count (Lời mời kết bạn thì luôn là 1)
+    );
 
         return Result<FriendshipResponseDto>.Ok(MapToDto(friendship), "Đã gửi lời mời kết bạn.");
     }
@@ -63,11 +65,13 @@ public class FriendshipService : IFriendshipService
             friendship.UpdatedAt = DateTime.UtcNow;
             _friendshipRepo.Update(friendship);
 
-            await _notificationService.CreateNotificationAsync(
-                dto.RequesterId,
-                "Đã chấp nhận lời mời kết bạn của bạn.",
-                "FRIEND_ACCEPT",
-                $"/profile/{userId}"
+            await _notificationService.CreateOrUpdateInteractionNotificationAsync(
+                dto.RequesterId,            // Người nhận thông báo (người gửi lời mời ban đầu)
+                userId,                     // Người chấp nhận (người gửi hiện tại - LastActor)
+                "FRIEND_ACCEPT",            // Loại thông báo
+                $"/profile/{userId}",       // Link dẫn đến profile người vừa chấp nhận
+                "đã chấp nhận lời mời kết bạn của bạn.", // Nội dung
+                1                           // Count (với kết bạn thì để là 1)
             );
         }
         else
@@ -107,8 +111,17 @@ public class FriendshipService : IFriendshipService
         if (friendship == null || friendship.Status != 0)
             return Result<string>.NotFound("Không tìm thấy lời mời để hủy.");
 
+        // 1. Xóa trong bảng Friendship
         _friendshipRepo.Delete(friendship);
+
+        // 2. Xóa thông báo tương ứng để máy người kia không còn hiện "chuông" nữa
+        // Logic: Người nhận là receiverId, loại là FRIEND_REQUEST, link là profile của người hủy (userId)
+        var notificationLink = $"/profile/{userId}";
+        await _notificationService.DeleteNotificationByLogicAsync(receiverId, "FRIEND_REQUEST", notificationLink);
+
+        // 3. Lưu tất cả thay đổi vào DB một lần duy nhất
         await _friendshipRepo.SaveChangesAsync();
+
         return Result<string>.Ok(message: "Đã hủy lời mời.");
     }
 

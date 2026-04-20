@@ -4,27 +4,37 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace InteractHub.API.Entities;
 
-[Table("Notification")] // Đảm bảo mapping đúng tên bảng
+[Table("Notification")]
 public class Notification
 {
     [Key]
     public int Id { get; set; }
 
-    public string? UserId { get; set; }
+    [Required] // Bắt buộc phải có người nhận
+    public string UserId { get; set; } = string.Empty;   
 
     public string? Message { get; set; }
 
-    public string? Type { get; set; }
+    [Required] // Bắt buộc có loại để gom nhóm
+    public string Type { get; set; } = string.Empty;
 
-    // --- CỘT MỚI THÊM ---
-    public string? Link { get; set; } 
+    public string? Link { get; set; }
 
-    public bool? IsRead { get; set; } = false;
+    public string? LastActorId { get; set; }
 
-    public DateTime? CreatedAt { get; set; }
+    public int ActorsCount { get; set; } = 1;
+
+    public bool IsRead { get; set; } = false;
+
+    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+
+    public DateTime? UpdatedAt { get; set; }
 
     public int? Status { get; set; }
 
     [ForeignKey("UserId")]
-    public User? User { get; set; }
+    public virtual User? User { get; set; } // Thêm virtual
+
+    [ForeignKey("LastActorId")]
+    public virtual User? LastActor { get; set; } // Thêm virtual
 }

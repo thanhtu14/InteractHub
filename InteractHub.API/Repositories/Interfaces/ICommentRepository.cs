@@ -12,4 +12,5 @@ public interface ICommentRepository : IRepository<Comment>
     Task RemoveLikeAsync(string userId, int commentId);
     Task<bool> PostExistsAsync(int postId);
     Task<bool> ParentCommentExistsAsync(int parentId);
+    Task<int> CountUniqueRepliersAsync(int parentCommentId);
 }

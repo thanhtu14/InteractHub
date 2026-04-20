@@ -185,11 +185,19 @@ namespace InteractHub.API.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
-                    b.Property<DateTime?>("CreatedAt")
-                        .HasColumnType("datetime2");
+                    b.Property<int>("ActorsCount")
+                        .HasColumnType("int");
 
-                    b.Property<bool?>("IsRead")
+                    b.Property<DateTime>("CreatedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime2")
+                        .HasDefaultValueSql("GETDATE()");
+
+                    b.Property<bool>("IsRead")
                         .HasColumnType("bit");
+
+                    b.Property<string>("LastActorId")
+                        .HasColumnType("nvarchar(450)");
 
                     b.Property<string>("Link")
                         .HasColumnType("nvarchar(max)");
@@ -201,14 +209,26 @@ namespace InteractHub.API.Migrations
                         .HasColumnType("int");
 
                     b.Property<string>("Type")
+                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
                     b.Property<string>("UserId")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<string>("UserId1")
                         .HasColumnType("nvarchar(450)");
 
                     b.HasKey("Id");
 
+                    b.HasIndex("LastActorId");
+
                     b.HasIndex("UserId");
+
+                    b.HasIndex("UserId1");
 
                     b.ToTable("Notification");
                 });
@@ -664,9 +684,22 @@ namespace InteractHub.API.Migrations
 
             modelBuilder.Entity("InteractHub.API.Entities.Notification", b =>
                 {
+                    b.HasOne("InteractHub.API.Entities.User", "LastActor")
+                        .WithMany()
+                        .HasForeignKey("LastActorId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
                     b.HasOne("InteractHub.API.Entities.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("InteractHub.API.Entities.User", null)
                         .WithMany("Notifications")
-                        .HasForeignKey("UserId");
+                        .HasForeignKey("UserId1");
+
+                    b.Navigation("LastActor");
 
                     b.Navigation("User");
                 });

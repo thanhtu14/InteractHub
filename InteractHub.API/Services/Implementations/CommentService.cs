@@ -9,10 +9,12 @@ namespace InteractHub.API.Services.Implementations;
 public class CommentService : ICommentService
 {
     private readonly ICommentRepository _commentRepo;
+    private readonly INotificationService _notificationService; // ✅ thêm
 
-    public CommentService(ICommentRepository commentRepo)
+    public CommentService(ICommentRepository commentRepo, INotificationService notificationService) // ✅ thêm
     {
         _commentRepo = commentRepo;
+        _notificationService = notificationService;
     }
 
     public async Task<Result<CommentResponseDTO>> AddAsync(string userId, CommentRequestDTO request)
@@ -43,13 +45,30 @@ public class CommentService : ICommentService
         {
             var parent = await _commentRepo.GetByIdWithUserAsync(request.ParentId.Value);
             parentName = parent?.User?.FullName;
+
+            // ✅ Gửi thông báo cho người được reply
+            // Chỉ gửi nếu người reply khác người được reply
+            if (parent != null
+     && !string.IsNullOrEmpty(parent.UserId)
+     && parent.UserId != userId)
+            {
+    var uniqueRepliersCount = await _commentRepo.CountUniqueRepliersAsync(request.ParentId.Value);
+
+                await _notificationService.CreateOrUpdateInteractionNotificationAsync(
+                    parent.UserId,                                        // người nhận
+                    userId,                                               // người reply
+                    "COMMENT_REPLY",                                      // type
+                    $"/post/{request.PostId}#comment-{comment.Id}",       // link
+                    "đã trả lời bình luận của bạn.",                      // message
+                    uniqueRepliersCount                                            // tổng số reply
+                );
+            }
         }
 
         return saved == null
             ? Result<CommentResponseDTO>.ServerError("Không thể tạo bình luận.")
             : Result<CommentResponseDTO>.Ok(MapToResponseSingle(saved, userId, parentName), "Comment created successfully");
     }
-
     public async Task<Result<CommentResponseDTO>> UpdateAsync(string userId, int commentId, string content)
     {
         var comment = await _commentRepo.GetByIdAsync(commentId);

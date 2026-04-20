@@ -97,4 +97,10 @@ public class CommentRepository : Repository<Comment>, ICommentRepository
         if (like != null)
             _context.CommentLikes.Remove(like);
     }
+    public async Task<int> CountUniqueRepliersAsync(int parentCommentId)
+    => await _context.Comments
+        .Where(c => c.ParentId == parentCommentId && c.Status == 1)
+        .Select(c => c.UserId)
+        .Distinct()
+        .CountAsync();
 }

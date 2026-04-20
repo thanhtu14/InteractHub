@@ -160,5 +160,23 @@ public class AppDbContext : IdentityDbContext<User>
             .HasForeignKey(cl => cl.UserId)
             .OnDelete(DeleteBehavior.Restrict); // Restrict để tránh multiple cascade paths
             });
+            // --- 9. Cấu hình Notification (Gom nhóm & LastActor) ---
+            modelBuilder.Entity<Notification>(entity =>
+            {
+                  entity.Property(n => n.CreatedAt)
+          .HasDefaultValueSql("GETDATE()");
+
+                  // Quan hệ với người NHẬN thông báo
+                  entity.HasOne(n => n.User)
+          .WithMany() // Nếu bên User.cs bạn không tạo ICollection<Notification> thì để trống
+          .HasForeignKey(n => n.UserId)
+          .OnDelete(DeleteBehavior.Cascade); // Xóa User thì xóa hết thông báo của họ
+
+                  // Quan hệ với người TƯƠNG TÁC cuối cùng (LastActor)
+                  entity.HasOne(n => n.LastActor)
+          .WithMany()
+          .HasForeignKey(n => n.LastActorId)
+          .OnDelete(DeleteBehavior.Restrict); // Dùng Restrict để tránh lỗi "Multiple Cascade Paths"
+            });
       }
 }

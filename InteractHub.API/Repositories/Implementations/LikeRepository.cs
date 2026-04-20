@@ -14,10 +14,16 @@ namespace InteractHub.API.Repositories.Implementations;public class LikeReposito
     }
 
     public async Task<Like?> GetByUserAndPostAsync(string userId, int postId)
-        => await _context.Likes.FirstOrDefaultAsync(l => l.UserId == userId && l.PostId == postId);
+    => await _context.Likes
+        .Include(l => l.Post) // Thêm dòng này để lấy thông tin bài viết (bao gồm cả Post.UserId)
+        .FirstOrDefaultAsync(l => l.UserId == userId && l.PostId == postId);
 
     public async Task<List<Like>> GetByPostIdAsync(int postId)
-        => await _context.Likes.Include(l => l.User).Where(l => l.PostId == postId).ToListAsync();
+    => await _context.Likes
+        .Include(l => l.User)
+        .Include(l => l.Post) // ← thêm dòng này
+        .Where(l => l.PostId == postId)
+        .ToListAsync();
 
     // Thực hiện GroupBy ngay dưới Database
     public async Task<Dictionary<string, int>> GetBreakdownByPostIdAsync(int postId)
