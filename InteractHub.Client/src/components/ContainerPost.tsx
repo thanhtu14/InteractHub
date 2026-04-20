@@ -5,7 +5,7 @@ import type { SortOrder, StatusFilter } from "./PostFilterBar";
 
 export interface PostData {
   id: string | number;
-  userId?: string | number;
+  userId?: string ;
   fullName: string;
   authorAvatar?: string;
   title?: string;

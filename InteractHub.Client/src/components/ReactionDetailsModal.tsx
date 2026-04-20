@@ -22,52 +22,56 @@ const ReactionModal = ({ postId, summary, onClose, resolveUrl }: ReactionModalPr
   const [users, setUsers] = useState<LikeUserDetails[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
 
-  // Gọi API lấy danh sách user mỗi khi tab thay đổi
- useEffect(() => {
-  setLoading(true);
-  likeService.getDetails(postId, activeTab)
-    .then((res) => {
-      // LOG TẠI ĐÂY ĐỂ KIỂM TRA
-      console.log(">>> Full Response từ API:", res);
-      console.log(">>> Danh sách User (Data):", res.Data);
-      
-      if (res.Data && res.Data.length > 0) {
-        console.log(">>> Check thử User đầu tiên:", {
-          FullName: res.Data[0].FullName,
-          AvatarPath: res.Data[0].Avatar // Xem đường dẫn này là gì (vd: /uploads/user.jpg)
-        });
-      }
+  useEffect(() => {
+    let cancelled = false;
 
-      setUsers(res.Data || []);
-    })
-    .catch((err) => console.error("Lỗi API:", err))
-    .finally(() => setLoading(false));
+    const fetchDetails = async () => {
+        try {
+            const data = await likeService.getDetails(postId, activeTab);
+            if (!cancelled) {
+                setUsers(data || []);
+            }
+        } catch (err) {
+            console.error("Lỗi API:", err);
+        } finally {
+            if (!cancelled) {
+                setLoading(false);
+            }
+        }
+    };
+
+    setLoading(true); // ✅ vẫn set loading nhưng trước khi gọi async
+    fetchDetails();
+
+    return () => {
+        cancelled = true; // cleanup tránh update state khi unmount
+    };
 }, [postId, activeTab]);
 
   return (
-    <div 
-      className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4" 
+    <div
+      className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4"
       onClick={onClose}
     >
-      <div 
-        className="bg-[#242526] w-full max-lg rounded-2xl border border-[#3e4042] shadow-2xl flex flex-col max-h-[80vh] sm:max-w-[500px]" 
+      <div
+        className="bg-[#242526] w-full max-lg rounded-2xl border border-[#3e4042] shadow-2xl flex flex-col max-h-[80vh] sm:max-w-[500px]"
         onClick={e => e.stopPropagation()}
       >
-        
+
         {/* HEADER */}
         <div className="flex items-center justify-between p-4 border-b border-[#3e4042]">
           <h3 className="text-white font-bold text-lg">Người đã bày tỏ cảm xúc</h3>
-          <button 
-            onClick={onClose} 
+          <button
+            onClick={onClose}
             className="text-gray-400 hover:bg-[#3a3b3c] w-9 h-9 rounded-full flex items-center justify-center transition-colors"
           >
             ✕
           </button>
         </div>
-        
-        {/* TABS (Hiển thị các loại cảm xúc đang có) */}
+
+        {/* TABS */}
         <div className="flex border-b border-[#3e4042] px-2 overflow-x-auto no-scrollbar scroll-smooth">
-          <button 
+          <button
             onClick={() => setActiveTab("all")}
             className={`px-4 py-3 text-sm font-semibold border-b-4 transition-all whitespace-nowrap 
               ${activeTab === "all" ? "border-blue-500 text-blue-500" : "border-transparent text-gray-400 hover:bg-[#3a3b3c]"}`}
@@ -76,17 +80,17 @@ const ReactionModal = ({ postId, summary, onClose, resolveUrl }: ReactionModalPr
           </button>
 
           {summary.Breakdown && Object.entries(summary.Breakdown).map(([type, count]) => {
-            if (!(count as number)) return null;
+            if (!count) return null;
             const reactionInfo = REACTIONS.find(r => r.key === type.toLowerCase());
             return (
-              <button 
+              <button
                 key={type}
                 onClick={() => setActiveTab(type)}
                 className={`flex items-center gap-2 px-4 py-3 text-sm font-semibold border-b-4 transition-all whitespace-nowrap
                   ${activeTab === type ? "border-blue-500 text-blue-500" : "border-transparent text-gray-400 hover:bg-[#3a3b3c]"}`}
               >
                 <span className="text-xl">{reactionInfo?.emoji}</span>
-                <span>{count as number}</span>
+                <span>{count}</span>
               </button>
             );
           })}
@@ -96,22 +100,21 @@ const ReactionModal = ({ postId, summary, onClose, resolveUrl }: ReactionModalPr
         <div className="overflow-y-auto flex-1 p-2 min-h-[350px] custom-scrollbar">
           {loading ? (
             <div className="flex flex-col items-center justify-center py-20 gap-3">
-              <div className="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+              <div className="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin" />
               <p className="text-gray-400 text-sm">Đang tải...</p>
             </div>
           ) : users.length > 0 ? (
             <div className="space-y-1">
               {users.map((user) => (
-                <div 
-                  key={user.UserId} 
+                <div
+                  key={user.UserId}
                   className="flex items-center justify-between p-2.5 hover:bg-[#3a3b3c] rounded-xl transition-colors cursor-pointer"
                 >
                   <div className="flex items-center gap-3">
-                    {/* Avatar kèm icon reaction nhỏ */}
                     <div className="relative">
-                      <img 
-                        src={user.Avatar ? resolveUrl(user.Avatar) : "/assets/img/icons8-user-default-64.png"} 
-                        className="w-11 h-11 rounded-full object-cover ring-1 ring-[#3e4042]" 
+                      <img
+                        src={user.Avatar ? resolveUrl(user.Avatar) : "/assets/img/icons8-user-default-64.png"}
+                        className="w-11 h-11 rounded-full object-cover ring-1 ring-[#3e4042]"
                         alt={user.FullName}
                         onError={(e) => (e.currentTarget.src = "/assets/img/icons8-user-default-64.png")}
                       />
@@ -121,7 +124,7 @@ const ReactionModal = ({ postId, summary, onClose, resolveUrl }: ReactionModalPr
                         </span>
                       </div>
                     </div>
-                    
+
                     <div className="flex flex-col">
                       <span className="text-white font-medium text-[16px]">{user.FullName}</span>
                     </div>

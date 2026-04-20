@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import Friend from "./Friends";
 import { friendshipService } from "../services/friendshipService";
+import {removeVietnameseTones} from "../utils/stringUtils"; // ✅ Tái sử dụng hàm chuẩn hóa chuỗi cho tìm kiếm
 
 interface FriendResponseDto {
   Id: string;
@@ -20,16 +21,7 @@ const mapFriend = (item: FriendResponseDto): FriendType => ({
   avatarUrl: item.AvatarUrl,
 });
 
-const removeVietnameseTones = (str: string | undefined | null) => {
-  if (!str) return "";
-  return str
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .replace(/đ/g, "d")
-    .replace(/Đ/g, "D")
-    .toLowerCase()
-    .trim();
-};
+
 
 interface FriendListProps {
   userId: string; // ← nhận userId từ ngoài vào

@@ -1,40 +1,19 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import Navbar from "../../components/Navigation";
 import FriendRequestList from "../../components/FriendRequestList";
 import FriendList from "../../components/ListFriends";
-
-interface User {
-  id: string | number;
-  email: string;
-  fullName?: string;
-  avatarUrl?: string;
-}
+import { useAuth } from "../../context/useAuth";
 
 const FriendPage: React.FC = () => {
   const navigate = useNavigate();
-
-  const [user] = useState<User | null>(() => {
-    const storedUser = localStorage.getItem("interact_hub_user");
-    if (storedUser) {
-      try {
-        return JSON.parse(storedUser) as User;
-      } catch (err) {
-        console.error("Lỗi khi parse user từ localStorage", err);
-        localStorage.removeItem("user");
-        return null;
-      }
-    }
-    return null;
-  });
+  const { user, isAuthenticated } = useAuth();
 
   useEffect(() => {
-    if (!user) navigate("/");
-  }, [user, navigate]);
+    if (!isAuthenticated) navigate("/login");
+  }, [isAuthenticated, navigate]);
 
   return (
     <div className="min-h-screen bg-[#18191a]">
-      <Navbar />
 
       <main className="max-w-[1200px] mx-auto pt-20 px-4">
         <div className="flex gap-4 items-start">
@@ -55,7 +34,7 @@ const FriendPage: React.FC = () => {
             <h2 className="text-xl font-bold text-white mb-4">
               Bạn bè
             </h2>
-            <FriendList />
+            {user && <FriendList userId={user.Id} />}
           </div>
 
         </div>

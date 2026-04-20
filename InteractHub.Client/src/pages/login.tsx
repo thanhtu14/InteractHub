@@ -34,7 +34,7 @@ const LoginPage = () => {
       navigate("/homepage");
     } catch (error: unknown) {
       if (axios.isAxiosError(error)) {
-        setErrorMessage(error.response?.data?.message || "Đăng nhập thất bại");
+        setErrorMessage(error.response?.data?.Message || "Đăng nhập thất bại");
       } else {
         setErrorMessage("Đăng nhập thất bại. Vui lòng thử lại.");
       }
@@ -49,11 +49,11 @@ const LoginPage = () => {
     setErrorMessage("");
     try {
       const res = await registerAPI(formData);
-      login(res.data.user, res.data.token);
+      login(res.data.User, res.data.Token);
       navigate("/homepage");
     } catch (error: unknown) {
       if (axios.isAxiosError(error)) {
-        setErrorMessage(error.response?.data?.message || "Đăng ký thất bại");
+        setErrorMessage(error.response?.data?.Message || "Đăng ký thất bại");
       } else {
         setErrorMessage("Đăng ký thất bại. Vui lòng thử lại.");
       }

@@ -1,6 +1,7 @@
 import React from "react";
 import { FaMessage } from "react-icons/fa6";
 import { useNavigate } from "react-router-dom";
+import { resolveUrl } from "../utils/urlUtils"; // ✅ Tái sử dụng hàm định dạng thời gian chuẩn
 
 interface FriendProps {
   friend: {
@@ -9,17 +10,6 @@ interface FriendProps {
     avatarUrl?: string | null;
   };
 }
-
-// Định nghĩa Base URL giống như ProfileHeader của bạn
-const SERVER_BASE_URL = "https://localhost:7069";
-
-// Sử dụng chung logic resolveUrl để đồng bộ hiển thị ảnh
-const resolveUrl = (path?: string | null): string | undefined => {
-  if (!path) return undefined;
-  if (path.startsWith("http")) return path;
-  return `${SERVER_BASE_URL}${path}`;
-};
-
 const Friend: React.FC<FriendProps> = ({ friend }) => {
   const navigate = useNavigate();
 

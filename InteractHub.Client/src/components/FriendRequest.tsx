@@ -1,5 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom"; // 1. Import useNavigate
+import { resolveUrl } from "../utils/urlUtils"; // ✅ Tái sử dụng hàm định dạng thời gian chuẩn
+import { getTimeAgo } from "../utils/timeUtils"; // ✅ Tái sử dụng hàm định dạng thời gian chuẩn
 interface FriendRequestProps {
   request: {
     friendshipId?: string | number;
@@ -11,46 +13,6 @@ interface FriendRequestProps {
   onAccept: (id: string | number) => Promise<void>;
   onReject: (id: string | number) => Promise<void>;
 }
-
-const SERVER_BASE_URL = "https://localhost:7069";
-
-
-
-const getTimeAgo = (dateString?: string | null): string => {
-  if (!dateString) return "";
-  
-  // 1. Chuẩn hóa chuỗi: Thay khoảng trắng bằng 'T' và thêm 'Z' ở cuối
-  // Ví dụ: "2026-04-11 09:13:26" -> "2026-04-11T09:13:26Z"
-  const normalizedDate = dateString.replace(" ", "T") + "Z";
-  
-  const now = new Date();
-  const past = new Date(normalizedDate);
-
-  // 2. Tính toán khoảng cách
-  const diffInSeconds = Math.floor((now.getTime() - past.getTime()) / 1000);
-
-  // Nếu âm (do lệch mili giây máy chủ) thì coi như vừa xong
-  if (diffInSeconds < 0) return "vừa xong";
-  
-  if (diffInSeconds < 60) return "vừa xong";
-  
-  const diffInMinutes = Math.floor(diffInSeconds / 60);
-  if (diffInMinutes < 60) return `${diffInMinutes} phút trước`;
-  
-  const diffInHours = Math.floor(diffInMinutes / 60);
-  if (diffInHours < 24) return `${diffInHours} giờ trước`;
-  
-  const diffInDays = Math.floor(diffInHours / 24);
-  if (diffInDays < 7) return `${diffInDays} ngày trước`;
-  
-  return `${Math.floor(diffInDays / 7)} tuần trước`;
-};
-
-const resolveUrl = (path?: string | null): string => {
-  if (!path) return "/images/default-avatar.png";
-  if (path.startsWith("http")) return path;
-  return `${SERVER_BASE_URL}${path.startsWith('/') ? '' : '/'}${path}`;
-};
 
 const FriendRequest = ({ request, onAccept, onReject }: FriendRequestProps) => {
   const [isProcessing, setIsProcessing] = useState(false);

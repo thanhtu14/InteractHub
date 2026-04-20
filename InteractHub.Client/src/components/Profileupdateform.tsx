@@ -13,6 +13,7 @@ import {
 
 // Services & Schemas
 import { userService } from "../services/userService";
+import {resolveUrl} from "../utils/urlUtils"; // ✅ Tái sử dụng hàm định dạng thời gian chuẩn
 import {
   profileUpdateSchema,
   type ProfileUpdateData,
@@ -22,15 +23,6 @@ import {
 // ── Constants ────────────────────────────────────────────────
 const DEFAULT_AVATAR = "/images/default-avatar.png";
 const DEFAULT_COVER = "/images/anh-bia.png";
-const SERVER_BASE_URL = "https://localhost:7069";
-
-const resolveUrl = (path?: string | null): string => {
-  if (!path) return "";
-  if (path.startsWith("http")) return path;
-  return `${SERVER_BASE_URL}${path}`;
-};
-
-
 // ── Toast Component ──────────────────────────────────────────
 type ToastType = "success" | "error";
 interface ToastProps {

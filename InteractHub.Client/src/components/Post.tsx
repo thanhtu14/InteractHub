@@ -1,30 +1,29 @@
 import { useState, useRef, useEffect, useCallback } from "react";
+import { useNavigate } from "react-router-dom"; // ✅ thêm import
+
 import CommentSection from "./CommentSection";
 import ReactionModal from "../components/ReactionDetailsModal";
 import { likeService } from "../services/likeService";
 import { commentService } from "../services/commetService";
 import ReportModal from "../components/ReportModal";
+import { resolveUrl } from "../utils/urlUtils"; // ✅ Tái sử dụng hàm định dạng thời gian chuẩn 
 
 interface PostProps {
   post: {
     id: string | number;
+    userId?: string;        // ✅ thêm
     fullName: string;
     authorAvatar?: string;
     title?: string;
     content: string;
     mediaUrls: string[];
     createdAt: string;
-    status?: number; // ← thêm
+    status?: number;
   };
+  autoOpenComments?: boolean; // ✅ thêm
 }
 
-const API_BASE_URL = "https://localhost:7069";
 
-const resolveUrl = (path?: string | null): string => {
-  if (!path) return "";
-  if (path.startsWith("http")) return path;
-  return `${API_BASE_URL}${path}`;
-};
 
 const REACTIONS = [
   { key: "like", emoji: "👍", label: "Thích", color: "text-[#1877f2]" },
@@ -43,7 +42,7 @@ const STATUS_BADGE: Record<number, { label: string; emoji: string; className: st
 type ReactionKey = (typeof REACTIONS)[number]["key"] | null;
 type Orientation = "portrait" | "landscape" | "square";
 
-const getOrientation = (url: string): Promise<Orientation> =>
+const getOrientation = (url: string ): Promise<Orientation> =>
   new Promise((resolve) => {
     if (url.match(/\.(mp4|webm|ogg)$/i)) {
       const video = document.createElement("video");
@@ -66,11 +65,13 @@ const getOrientation = (url: string): Promise<Orientation> =>
     img.src = url;
   });
 
-const Post = ({ post }: PostProps) => {
+const Post = ({ post, autoOpenComments = false }: PostProps) => {
+  const navigate = useNavigate(); // ✅ thêm
+
   const [reaction, setReaction] = useState<ReactionKey>(null);
   const [reactionCount, setReactionCount] = useState(0);
   const [showPicker, setShowPicker] = useState(false);
-  const [showComments, setShowComments] = useState(false);
+  const [showComments, setShowComments] = useState(autoOpenComments); // ✅ thay false
   const [orientations, setOrientations] = useState<Orientation[] | null>(null);
   const [showReactionModal, setShowReactionModal] = useState(false);
   const [reactionSummary, setReactionSummary] = useState<any>(null);
@@ -83,49 +84,49 @@ const Post = ({ post }: PostProps) => {
   // ── FETCH COMMENT COUNT ──────────────────────────────────────
   const fetchCommentCount = useCallback(async () => {
     try {
-        const data = await commentService.getByPost(post.id as number);
-        // ✅ data là CommentResponse[] trực tiếp
-        const countAll = (list: any[]): number =>
-            list.reduce((acc, curr) => acc + 1 + (curr.Replies ? countAll(curr.Replies) : 0), 0);
-        setCommentCount(countAll(data));
+      const data = await commentService.getByPost(post.id as number);
+      // ✅ data là CommentResponse[] trực tiếp
+      const countAll = (list: any[]): number =>
+        list.reduce((acc, curr) => acc + 1 + (curr.Replies ? countAll(curr.Replies) : 0), 0);
+      setCommentCount(countAll(data));
     } catch (error) {
-        console.error("Lỗi fetch comment:", error);
+      console.error("Lỗi fetch comment:", error);
     }
-}, [post.id]);
+  }, [post.id]);
   // ── LOGIC FETCH STATE (Hỗ trợ cả PascalCase và camelCase) ──────
   const fetchLikeState = useCallback(async () => {
     try {
-        const data = await likeService.getState(post.id as number);
-        // ✅ data là LikeStateDto trực tiếp, không cần .Success hay .Data
-        setReaction(data.UserReaction as ReactionKey);
-        setReactionCount(data.Total || 0);
-        setReactionSummary(data);
+      const data = await likeService.getState(post.id as number);
+      // ✅ data là LikeStateDto trực tiếp, không cần .Success hay .Data
+      setReaction(data.UserReaction as ReactionKey);
+      setReactionCount(data.Total || 0);
+      setReactionSummary(data);
     } catch (error) {
-        console.error("Lỗi:", error);
+      console.error("Lỗi:", error);
     }
-}, [post.id]);
-useEffect(() => {
-  let isMounted = true; // Biến cờ để tránh update state khi component đã unmount
+  }, [post.id]);
+  useEffect(() => {
+    let isMounted = true; // Biến cờ để tránh update state khi component đã unmount
 
-  const loadData = async () => {
-    if (isMounted) {
-      await fetchLikeState();
-      await fetchCommentCount();
-    }
-  };
+    const loadData = async () => {
+      if (isMounted) {
+        await fetchLikeState();
+        await fetchCommentCount();
+      }
+    };
 
-  loadData();
+    loadData();
 
-  return () => {
-    isMounted = false; // Cleanup function
-  };
-}, [fetchLikeState, fetchCommentCount]);
+    return () => {
+      isMounted = false; // Cleanup function
+    };
+  }, [fetchLikeState, fetchCommentCount]);
 
   // ── LOGIC MEDIA ORIENTATION ────────────────────────────────────
   useEffect(() => {
     if (!post.mediaUrls?.length) return;
     Promise.all(
-      post.mediaUrls.map((url) => getOrientation(resolveUrl(url)))
+      post.mediaUrls.map((url) => getOrientation(resolveUrl(url) ?? ""))
     ).then(setOrientations);
   }, [post.mediaUrls]);
 
@@ -146,8 +147,8 @@ useEffect(() => {
     setShowPicker(true);
   };
   const handleReport = () => {
-  setIsReportOpen(true);
-};
+    setIsReportOpen(true);
+  };
 
   const handleMouseLeavePicker = () => {
     if (hoverTimeout.current) clearTimeout(hoverTimeout.current);
@@ -156,13 +157,13 @@ useEffect(() => {
 
   const handleSelectReaction = async (key: string) => {
     try {
-        await likeService.react(post.id as number, key); // ✅ bỏ check res.Success
-        await fetchLikeState();
+      await likeService.react(post.id as number, key); // ✅ bỏ check res.Success
+      await fetchLikeState();
     } catch (error) {
-        console.error("Lỗi:", error);
+      console.error("Lỗi:", error);
     }
     setShowPicker(false);
-};
+  };
 
   const handleClickLikeBtn = async () => {
     const targetKey = reaction ? reaction : "like";
@@ -332,11 +333,17 @@ useEffect(() => {
         <img
           src={post.authorAvatar ? resolveUrl(post.authorAvatar) : "/assets/img/icons8-user-default-64.png"}
           alt={post.fullName}
-          className="w-11 h-11 rounded-full object-cover ring-2 ring-gray-700"
+          onClick={() => post.userId && navigate(`/profile/${post.userId}`)} // ✅ thêm
+          className="w-11 h-11 rounded-full object-cover ring-2 ring-gray-700 cursor-pointer" // ✅ thêm cursor-pointer
           onError={(e) => { (e.currentTarget as HTMLImageElement).src = "/assets/img/icons8-user-default-64.png"; }}
         />
         <div>
-          <p className="font-semibold text-[17px]">{post.fullName}</p>
+          <p
+            onClick={() => post.userId && navigate(`/profile/${post.userId}`)} // ✅ thêm
+            className="font-semibold text-[17px] cursor-pointer hover:underline" // ✅ thêm
+          >
+            {post.fullName}
+          </p>
           <div className="flex items-center gap-2">
             <p className="text-gray-400 text-sm">
               {new Date(post.createdAt).toLocaleString("vi-VN")}
@@ -427,15 +434,15 @@ useEffect(() => {
         <button onClick={handleReport} className="flex-1 py-4 text-gray-300 hover:bg-[#3a3b3c]">🚩 Báo cáo</button>
       </div>
       {/* Nút report trong menu 3 chấm */}
-    
 
-    {/* MODAL REPORT */}
-    {isReportOpen && (
-      <ReportModal 
-        postId={Number(post.id)} 
-        onClose={() => setIsReportOpen(false)} 
-      />
-    )}
+
+      {/* MODAL REPORT */}
+      {isReportOpen && (
+        <ReportModal
+          postId={Number(post.id)}
+          onClose={() => setIsReportOpen(false)}
+        />
+      )}
 
       {/* COMMENTS */}
       {showComments && (

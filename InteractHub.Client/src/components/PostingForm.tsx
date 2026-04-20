@@ -1,57 +1,27 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { FaUserCircle, FaVideo, FaImage, FaSmile } from "react-icons/fa";
 import PostModal from "./PostModal";
+import { useAuth } from "../context/useAuth"; // ✅ import hook
+import { resolveUrl } from "../utils/urlUtils"; // ✅ Tái sử dụng hàm định dạng thời gian chuẩn
 
 interface PostingFormProps {
-  user?: any;           // User truyền từ Profile (ưu tiên cao)
+  user?: any;
   variant?: "home" | "profile";
 }
 
-const API_BASE_URL = "https://localhost:7069";
-
-// Hàm resolveUrl giống hệt file ProfileHeader
-const resolveUrl = (path?: string | null): string => {
-  if (!path) return "";
-  if (path.startsWith("http")) return path;
-  return `${API_BASE_URL}${path}`;
-};
-
-const PostingForm: React.FC<PostingFormProps> = ({ user, variant = "home" }) => {
+const PostingForm: React.FC<PostingFormProps> = ({  variant = "home" }) => {
   const [showForm, setShowForm] = useState(false);
-  // Chỉ lấy từ localStorage khi KHÔNG có user từ prop (dùng cho trang Home)
-  const [currentUser] = useState<any>(() => {
-    if (typeof window === "undefined") return null; // Tránh lỗi SSR nếu có
-    const storedUser = localStorage.getItem("interact_hub_user");
-    if (storedUser) {
-      try {
-        return JSON.parse(storedUser);
-      } catch (error) {
-        console.error("Lỗi parse user:", error);
-        return null;
-      }
-    }
-    return null;
-  });
+  const { user: authUser } = useAuth(); // ✅ lấy user từ AuthContext
 
-  // useEffect bây giờ chỉ dùng để log hoặc theo dõi thay đổi từ prop 'user'
-  useEffect(() => {
-    if (user) {
-      console.log("User từ props:", user);
-    }
-  }, [user]);
-
-  // Ưu tiên user từ prop (Profile) > user từ localStorage (Home)
-  const displayUser = user || currentUser;
-  console.log("fhasja",displayUser);
+  // Ưu tiên user từ prop (Profile) > user từ AuthContext
+  const displayUser = authUser;
 
   return (
     <div
       className={`bg-[#242526] border border-[#3e4042] rounded-3xl p-5 shadow-xl
         ${variant === "profile" ? "w-full" : "max-w-2xl mx-auto"}`}
     >
-      {/* Phần nhập bài viết */}
       <div className="flex items-center gap-4">
-        {/* Avatar - Học theo style ProfileHeader */}
         <div className="flex-shrink-0">
           {displayUser?.AvatarUrl ? (
             <img
@@ -67,7 +37,6 @@ const PostingForm: React.FC<PostingFormProps> = ({ user, variant = "home" }) => 
           )}
         </div>
 
-        {/* Nút mở form đăng bài */}
         <button
           onClick={() => setShowForm(true)}
           className="flex-1 bg-[#3a3b3c] hover:bg-[#4a4b4d] text-left text-gray-300 
@@ -75,28 +44,22 @@ const PostingForm: React.FC<PostingFormProps> = ({ user, variant = "home" }) => 
              focus:outline-none focus:ring-2 focus:ring-[#1877f2] active:scale-[0.985]"
         >
           {(() => {
-            const name = displayUser?.Username || displayUser?.fullName;
+            const name = displayUser?.Username;
             if (!name) return "Bạn đang nghĩ gì?";
-
-            // Logic cắt chữ cuối: Trim khoảng trắng -> Cắt mảng -> Lấy phần tử cuối
             const lastName = name.trim().split(" ").pop();
-
             return `${lastName} ơi, bạn đang nghĩ gì?`;
           })()}
         </button>
       </div>
 
-      {/* Thanh phân cách */}
       <div className="border-t border-[#3e4042] my-4" />
 
-      {/* Các nút chức năng */}
       <div className="grid grid-cols-3 gap-2">
         <ActionButton icon={<FaVideo className="text-red-500" />} label="Video trực tiếp" />
         <ActionButton icon={<FaImage className="text-green-500" />} label="Ảnh/Video" />
         <ActionButton icon={<FaSmile className="text-orange-500" />} label="Cảm xúc/Hoạt động" />
       </div>
 
-      {/* Post Modal */}
       {showForm && (
         <PostModal
           user={displayUser}
@@ -107,7 +70,6 @@ const PostingForm: React.FC<PostingFormProps> = ({ user, variant = "home" }) => 
   );
 };
 
-// Component nút chức năng
 const ActionButton = ({ icon, label }: { icon: React.ReactNode; label: string }) => (
   <button
     className="flex items-center justify-center gap-3 py-3.5 hover:bg-[#3a3b3c] 

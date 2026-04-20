@@ -3,6 +3,7 @@ import { userService } from "../services/userService";
 import { friendshipService } from "../services/friendshipService";
 import { type User } from "../schemas/user.schema";
 import { toast } from "react-toastify";
+import { resolveUrl } from "../utils/urlUtils"; // ✅ Tái sử dụng hàm định dạng thời gian chuẩn
 
 interface ProfileHeaderProps {
   userId: string;
@@ -14,14 +15,6 @@ interface FriendshipStatus {
   status: number | null;
   isRequester: boolean;
 }
-
-const SERVER_BASE_URL = "https://localhost:7069";
-
-const resolveUrl = (path?: string | null): string | undefined => {
-  if (!path) return undefined;
-  if (path.startsWith("http")) return path;
-  return `${SERVER_BASE_URL}${path}`;
-};
 
 // ── Confirm Dialog Component ─────────────────────────────────
 interface ConfirmDialogProps {

@@ -1,7 +1,8 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-
 import { commentService, type CommentResponse } from "../services/commetService";
+import {getTimeAgo} from "../utils/timeUtils"; // ✅ Tái sử dụng hàm định dạng thời gian chuẩn
+import {resolveUrl} from "../utils/urlUtils"; // ✅ Tái sử dụng hàm định dạng thời gian chuẩn
 
 interface CommentProps {
   comment: CommentResponse;
@@ -9,40 +10,16 @@ interface CommentProps {
   onReplyAdded?: (newComment: CommentResponse) => void;
   depth?: number;
   parentUserName?: string;
+  highlighted?: boolean; // ✅ để highlight comment được navigate đến
 }
-const getTimeAgo = (dateString?: string | null): string => {
-  if (!dateString) return "";
-
-  // Chuẩn hóa format từ DB (ví dụ: "2026-04-11 09:13:26") sang chuẩn ISO
-  const normalizedDate = dateString.replace(" ", "T") + "Z";
-  const now = new Date();
-  const past = new Date(normalizedDate);
-
-  const diffInSeconds = Math.floor((now.getTime() - past.getTime()) / 1000);
-
-  if (diffInSeconds < 60) return "vừa xong";
-
-  const diffInMinutes = Math.floor(diffInSeconds / 60);
-  if (diffInMinutes < 60) return `${diffInMinutes} phút`;
-
-  const diffInHours = Math.floor(diffInMinutes / 60);
-  if (diffInHours < 24) return `${diffInHours} giờ`;
-
-  const diffInDays = Math.floor(diffInHours / 24);
-  if (diffInDays < 7) return `${diffInDays} ngày`;
-
-  return `${Math.floor(diffInDays / 7)} tuần`;
-};
-
-const SERVER_BASE_URL = "https://localhost:7069";
-
-const resolveUrl = (path?: string | null): string | undefined => {
-  if (!path) return undefined;
-  if (path.startsWith("http")) return path;
-  return `${SERVER_BASE_URL}${path}`;
-};
-
-const Comment: React.FC<CommentProps> = ({ comment, postId, onReplyAdded, depth = 0, parentUserName }) => {
+const Comment: React.FC<CommentProps> = ({
+  comment,
+  postId,
+  onReplyAdded,
+  depth = 0,
+  parentUserName,
+  highlighted = false,
+}) => {
   const [isLiked, setIsLiked] = useState(comment.IsLikedByCurrentUser);
   const [likeCount, setLikeCount] = useState(comment.LikeCount);
   const [showReplyInput, setShowReplyInput] = useState(false);
@@ -50,19 +27,46 @@ const Comment: React.FC<CommentProps> = ({ comment, postId, onReplyAdded, depth 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [replies, setReplies] = useState<CommentResponse[]>(comment.Replies || []);
   const [showReplies, setShowReplies] = useState(false);
-  const navigate = useNavigate(); // ✅ thêm
+  const [isHighlighted, setIsHighlighted] = useState(highlighted);
+  const navigate = useNavigate();
+  const commentRef = useRef<HTMLDivElement>(null);
 
-
+  // 1. Tự động bung replies nếu URL chứa ID của comment con
   useEffect(() => {
-    setIsLiked(comment.IsLikedByCurrentUser);
-    setLikeCount(comment.LikeCount);
-    setReplies(comment.Replies || []);
-  }, [comment]);
+    const hash = window.location.hash;
+    const targetId = parseInt(hash.replace("#comment-", ""));
+
+    // Nếu comment hiện tại có con trùng với ID trên URL -> Mở danh sách con
+    if (comment.Replies?.some(r => r.Id === targetId)) {
+      setShowReplies(true);
+    }
+
+    // Nếu ID comment này chính là cái được nhắc tới trên URL -> Bật sáng
+    if (hash === `#comment-${comment.Id}`) {
+      setIsHighlighted(true);
+    }
+  }, [comment.Id, comment.Replies]);
+
+  // 2. Tự động cuộn tới và tạo hiệu ứng sáng rực
+  useEffect(() => {
+    if (isHighlighted && commentRef.current) {
+      // Đợi 400ms để danh sách kịp bung ra rồi mới scroll
+      setTimeout(() => {
+        commentRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+      }, 400);
+
+      // Sau 4 giây thì tắt màu highlight
+      // const colorTimer = setTimeout(() => setIsHighlighted(false), 4000);
+      // return () => {
+      //   clearTimeout(timer);
+      //   clearTimeout(colorTimer);
+      // };
+    }
+  }, [isHighlighted]);
 
   const handleToggleLike = async () => {
     try {
       const data = await commentService.toggleLike(comment.Id);
-      // ✅ data là CommentLikeResponse trực tiếp
       if (data) {
         setIsLiked(data.IsLiked);
         setLikeCount(data.LikeCount);
@@ -83,7 +87,6 @@ const Comment: React.FC<CommentProps> = ({ comment, postId, onReplyAdded, depth 
         Content: replyContent.trim(),
         ParentId: comment.Id,
       });
-      // ✅ data là CommentResponse trực tiếp
       if (data) {
         if (depth === 0) {
           setReplies(prev => [...prev, data]);
@@ -103,8 +106,14 @@ const Comment: React.FC<CommentProps> = ({ comment, postId, onReplyAdded, depth 
   const isTopLevel = depth === 0;
 
   return (
-    <div className={`flex gap-3 ${isTopLevel ? "mt-5" : "mt-3"}`}>
-      {/* Avatar - Tăng size lên 40px cho cấp 1 và 32px cho cấp 2 */}
+    <div
+      id={`comment-${comment.Id}`}
+      ref={commentRef}
+      className={`flex gap-3 ${isTopLevel ? "mt-5" : "mt-3"} rounded-xl transition-all duration-1000
+        ${isHighlighted
+          ? "bg-[#2d3f57] ring-2 ring-[#1877f2] p-3 shadow-[0_0_20px_rgba(24,119,242,0.4)]"
+          : "p-1"}`}
+    >
       <div className="flex-shrink-0">
         <img
           src={resolveUrl(comment.UserAvatar) || "/assets/img/icons8-user-default-64.png"}
@@ -114,10 +123,9 @@ const Comment: React.FC<CommentProps> = ({ comment, postId, onReplyAdded, depth 
       </div>
 
       <div className="flex-1 min-w-0">
-        {/* Bong bóng bình luận - Tăng padding và text size */}
         <div className="bg-[#3a3b3c] rounded-2xl px-4 py-2.5 w-fit max-w-[95%] shadow-md">
           <p
-            onClick={() => navigate(`/profile/${comment.UserId}`)} // ✅ thêm
+            onClick={() => navigate(`/profile/${comment.UserId}`)}
             className="text-white text-[14px] font-semibold hover:underline cursor-pointer mb-0.5"
           >
             {comment.UserName}
@@ -132,7 +140,6 @@ const Comment: React.FC<CommentProps> = ({ comment, postId, onReplyAdded, depth 
           </p>
         </div>
 
-        {/* Actions - Cập nhật phần hiển thị thời gian */}
         <div className="flex items-center gap-5 mt-1.5 ml-2 text-[12px] font-bold text-gray-400">
           <button
             onClick={handleToggleLike}
@@ -140,18 +147,14 @@ const Comment: React.FC<CommentProps> = ({ comment, postId, onReplyAdded, depth 
           >
             Thích {likeCount > 0 ? likeCount : ""}
           </button>
-
           <button onClick={() => setShowReplyInput(!showReplyInput)} className="hover:underline">
             Phản hồi
           </button>
-
-          {/* ✅ HIỂN THỊ THỜI GIAN THỰC TỪ DATA */}
           <span className="font-normal opacity-70 cursor-default">
             {getTimeAgo(comment.CreatedAt)}
           </span>
         </div>
 
-        {/* Input trả lời - Tăng chiều cao input */}
         {showReplyInput && (
           <form onSubmit={handleReplySubmit} className="mt-3 flex gap-2">
             <input
@@ -164,20 +167,18 @@ const Comment: React.FC<CommentProps> = ({ comment, postId, onReplyAdded, depth 
           </form>
         )}
 
-        {/* Nút xem phản hồi - Tăng kích thước */}
         {isTopLevel && replies.length > 0 && (
           <div className="mt-2 ml-2">
             <button
               onClick={() => setShowReplies(!showReplies)}
               className="text-gray-400 text-[13px] font-bold hover:underline flex items-center gap-2"
             >
-              <span className="w-6 h-[1px] bg-gray-600 inline-block"></span>
+              <span className="w-6 h-[1px] bg-gray-600 inline-block" />
               {showReplies ? "Ẩn bớt phản hồi" : `Xem tất cả ${replies.length} phản hồi`}
             </button>
           </div>
         )}
 
-        {/* Render Replies - Tăng border-left để phân tách rõ hơn */}
         {isTopLevel && showReplies && replies.length > 0 && (
           <div className="mt-3 space-y-3 border-l-[3px] border-[#4e4f50] ml-1 pl-4">
             {replies.map((reply) => (
@@ -187,6 +188,8 @@ const Comment: React.FC<CommentProps> = ({ comment, postId, onReplyAdded, depth 
                 postId={postId}
                 depth={1}
                 parentUserName={reply.ParentUserName}
+                // Quan trọng: Truyền highlighted cho con nếu hash URL khớp với ID của nó
+                highlighted={window.location.hash === `#comment-${reply.Id}`}
                 onReplyAdded={(newReply) => {
                   if (!replies.find(r => r.Id === newReply.Id)) {
                     setReplies(prev => [...prev, newReply]);

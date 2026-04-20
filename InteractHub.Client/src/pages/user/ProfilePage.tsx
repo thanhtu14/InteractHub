@@ -2,8 +2,6 @@ import React, { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { FaTimes } from "react-icons/fa";
 import { AxiosError } from "axios";
-
-import Navbar from "../../components/Navigation";
 import ProfileHeader from "../../components/ProfileHeader";
 import FriendList from "../../components/ListFriends";
 import PostList from "../../components/ContainerPost";
@@ -92,9 +90,8 @@ const ProfilePage: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-[#18191a] text-white">
-      <Navbar />
 
+    <div className="min-h-screen bg-[#18191a] text-white">
       <ProfileHeader
         userId={user.Id}
         isOwnProfile={isOwnProfilePage}
@@ -102,11 +99,11 @@ const ProfilePage: React.FC = () => {
       />
 
       <main className="max-w-[1200px] mx-auto mt-4 px-4 pb-10">
-        <div className="flex flex-col lg:flex-row gap-5">
+        <div className="flex flex-col lg:flex-row gap-5 lg:items-start">
 
-          {/* CỘT TRÁI */}
-          <aside className="w-full lg:w-[40%] space-y-4">
-            <div className="lg:sticky lg:top-20 space-y-4">
+          {/* CỘT TRÁI - sticky độc lập */}
+          <aside className="w-full lg:w-[40%]">
+            <div className="lg:sticky lg:top-4 space-y-4"> {/* ✅ sticky */}
               <div className="bg-[#242526] p-4 rounded-xl border border-[#3e4042] shadow-sm">
                 <h3 className="text-xl font-bold mb-2">Giới thiệu</h3>
                 <p className="text-center text-gray-300 mb-4 italic">
@@ -116,20 +113,18 @@ const ProfilePage: React.FC = () => {
               </div>
 
               <div className="bg-[#242526] p-4 rounded-xl border border-[#3e4042] shadow-sm">
-                {/* Truyền userId của người đang xem profile */}
                 <FriendList userId={user.Id} />
               </div>
             </div>
           </aside>
 
-          {/* CỘT PHẢI */}
+          {/* CỘT PHẢI - scroll bình thường */}
           <section className="w-full lg:w-[60%] space-y-4">
             {isOwnProfilePage && (
               <div className="px-2">
                 <PostingForm user={user} />
               </div>
             )}
-
             <PostFilterBar
               sort={sort}
               status={statusFilter}
@@ -139,7 +134,6 @@ const ProfilePage: React.FC = () => {
               isOwnProfile={isOwnProfilePage}
               isFriend={isFriend}
             />
-
             <PostList
               userId={user.Id}
               sort={sort}

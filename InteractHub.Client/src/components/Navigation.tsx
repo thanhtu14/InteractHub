@@ -9,8 +9,8 @@ import {
 } from "react-icons/fa";
 import { Link, useNavigate } from "react-router-dom";
 import axios from "axios";
+import { notificationService } from "../services/notificationService";
 
-// Định nghĩa Interface chuẩn theo Backend (PascalCase)
 interface User {
   Id: string;
   Username: string;
@@ -30,24 +30,28 @@ const Navbar: React.FC<NavbarProps> = ({ user: propUser, onChatClick, onNotifyCl
   const [results, setResults] = useState<User[]>([]);
   const [showDropdown, setShowDropdown] = useState(false);
   const [loadingSearch, setLoadingSearch] = useState(false);
+  const [unreadCount, setUnreadCount] = useState(0); // ✅ thêm
 
   const navigate = useNavigate();
   const inputRef = useRef<HTMLInputElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
-  // Lấy User: Ưu tiên từ props truyền xuống, sau đó tới localStorage
   const currentUser: User | null = propUser || JSON.parse(localStorage.getItem("interact_hub_user") || "null");
 
-  // Logic hiển thị tên (Lấy chữ cuối)
   const displayName = (() => {
     const name = currentUser?.FullName || currentUser?.Username || "Người dùng";
     return name.trim();
   })();
 
-  // Logic hiển thị Avatar
   const avatarSrc = currentUser?.AvatarUrl || "/images/default-avatar.png";
 
-  // Đóng dropdown tìm kiếm khi click ra ngoài
+  // ✅ Fetch unread count
+  useEffect(() => {
+    notificationService.getUnreadCount()
+      .then((res) => setUnreadCount(res.data ?? 0))
+      .catch(() => setUnreadCount(0));
+  }, []);
+
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (
@@ -98,12 +102,18 @@ const Navbar: React.FC<NavbarProps> = ({ user: propUser, onChatClick, onNotifyCl
     navigate("/login");
   };
 
+  // ✅ Click chuông → reset unread count
+  const handleNotifyClick = () => {
+    setUnreadCount(0);
+    onNotifyClick?.();
+  };
+
   return (
     <nav className="bg-[#242526] border-b border-[#3e4042] sticky top-0 z-50">
       <div className="max-w-7xl mx-auto px-2 h-20 flex items-center justify-between">
 
-        {/* LEFT - Logo & Search */}
-        <div className="flex items-center gap-3 ">
+        {/* LEFT */}
+        <div className="flex items-center gap-3">
           <Link to="/homepage" className="flex items-center gap-2 group">
             <div className="bg-[#1877f2] p-2 rounded-xl group-hover:rotate-12 transition-transform duration-300">
               <span className="text-white font-black text-xl italic">IH</span>
@@ -126,7 +136,6 @@ const Navbar: React.FC<NavbarProps> = ({ user: propUser, onChatClick, onNotifyCl
               onFocus={() => search && setShowDropdown(true)}
               className="w-full bg-[#3a3b3c] text-white pl-11 pr-4 py-2 rounded-full focus:outline-none focus:ring-2 focus:ring-[#1877f2] text-sm"
             />
-
             {showDropdown && (
               <div ref={dropdownRef} className="absolute top-[115%] left-0 w-full bg-[#242526] border border-[#3e4042] rounded-xl shadow-2xl max-h-[400px] overflow-y-auto py-2">
                 {loadingSearch ? (
@@ -149,16 +158,27 @@ const Navbar: React.FC<NavbarProps> = ({ user: propUser, onChatClick, onNotifyCl
           </div>
         </div>
 
-        {/* CENTER - Navigation */}
+        {/* CENTER */}
         <div className="hidden sm:flex items-center gap-1 md:gap-4">
           <NavIcon icon={<FaHome />} to="/homepage" />
           <NavIcon icon={<FaUserFriends />} to="/friendpage" />
           <NavIcon icon={<FaHouseUser />} to="/myprofile" />
           <NavIcon icon={<FaFacebookMessenger />} onClick={onChatClick} />
-          <NavIcon icon={<FaBell />} onClick={onNotifyClick} />
+
+          {/* ✅ Chuông với badge */}
+          <div className="relative">
+            <NavIcon icon={<FaBell />} onClick={handleNotifyClick} />
+            {unreadCount > 0 && (
+              <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[11px] font-bold
+                               min-w-[18px] h-[18px] rounded-full flex items-center justify-center
+                               px-1 leading-none pointer-events-none">
+                {unreadCount > 99 ? "99+" : unreadCount}
+              </span>
+            )}
+          </div>
         </div>
 
-        {/* RIGHT - Profile & Logout */}
+        {/* RIGHT */}
         <div className="flex items-center gap-3">
           <Link to="/myprofile" className="flex items-center gap-2.5 group p-1 pr-3 rounded-full hover:bg-white/5 transition-all">
             <img
@@ -178,12 +198,12 @@ const Navbar: React.FC<NavbarProps> = ({ user: propUser, onChatClick, onNotifyCl
             Đăng xuất
           </button>
         </div>
+
       </div>
     </nav>
   );
 };
 
-// Component con cho các Icon điều hướng để code gọn hơn
 const NavIcon = ({ icon, to, onClick }: { icon: React.ReactNode; to?: string; onClick?: () => void }) => {
   const content = (
     <div className="p-2.5 md:p-3 hover:bg-[#3a3b3c] rounded-xl cursor-pointer text-gray-400 hover:text-[#1877f2] transition-all text-3xl md:text-3xl">

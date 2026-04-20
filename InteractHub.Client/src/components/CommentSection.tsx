@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
+import { useLocation } from "react-router-dom";
 import Comment from "./Comment";
 import { commentService, type CommentResponse } from "../services/commetService";
 
@@ -12,6 +13,13 @@ const CommentSection: React.FC<CommentSectionProps> = ({ postId, onClose }) => {
   const [newComment, setNewComment] = useState<string>("");
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
+  const location = useLocation();
+  const listRef = useRef<HTMLDivElement>(null);
+
+  // ✅ Lấy commentId từ hash URL (vd: #comment-123)
+  const highlightedCommentId = location.hash.startsWith("#comment-")
+    ? Number(location.hash.replace("#comment-", ""))
+    : null;
 
   useEffect(() => {
     const fetchComments = async () => {
@@ -27,20 +35,17 @@ const CommentSection: React.FC<CommentSectionProps> = ({ postId, onClose }) => {
         setLoading(false);
       }
     };
-
     fetchComments();
   }, [postId]);
 
   const handleAddComment = async () => {
     if (!newComment.trim()) return;
-
     try {
       const data = await commentService.create({
         PostId: postId,
         Content: newComment.trim(),
         ParentId: null,
       });
-
       if (data) {
         setComments((prev) => [data, ...prev]);
         setNewComment("");
@@ -50,8 +55,6 @@ const CommentSection: React.FC<CommentSectionProps> = ({ postId, onClose }) => {
       alert("Đã xảy ra lỗi khi gửi bình luận.");
     }
   };
-
- 
 
   return (
     <div className="fixed inset-0 bg-black/50 flex justify-center items-center z-[1000]">
@@ -71,7 +74,7 @@ const CommentSection: React.FC<CommentSectionProps> = ({ postId, onClose }) => {
         </div>
 
         {/* Danh sách comment */}
-        <div className="max-h-[420px] overflow-y-auto mb-6 space-y-1 pr-2 custom-scrollbar">
+        <div ref={listRef} className="max-h-[420px] overflow-y-auto mb-6 space-y-1 pr-2 custom-scrollbar">
           {loading ? (
             <div className="flex justify-center py-8">
               <div className="animate-spin rounded-full h-7 w-7 border-b-2 border-[#1877f2]" />
@@ -87,6 +90,7 @@ const CommentSection: React.FC<CommentSectionProps> = ({ postId, onClose }) => {
                 comment={comment}
                 postId={postId}
                 parentUserName={comment.ParentUserName}
+                highlighted={comment.Id === highlightedCommentId} // ✅ highlight đúng comment
               />
             ))
           )}
