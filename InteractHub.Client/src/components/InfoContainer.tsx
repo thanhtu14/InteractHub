@@ -1,6 +1,3 @@
-// InfoContainer.tsx
-import { useState } from "react";
-import SettingForm from "./SettingForm";
 
 // ── Interface khớp với UserDto từ Backend ─────────────────────
 export interface User {
@@ -21,8 +18,8 @@ interface InfoContainerProps {
   isOwnProfile?: boolean;      // Có phải trang của chính mình
 }
 
-const InfoContainer: React.FC<InfoContainerProps> = ({ user, isOwnProfile = false }) => {
-  const [isEditing, setIsEditing] = useState(false);
+const InfoContainer: React.FC<InfoContainerProps> = ({ user }) => {
+
 
   return (
     <div className="bg-[#242526] border border-gray-700 rounded-3xl p-8 shadow-xl">
@@ -83,10 +80,7 @@ const InfoContainer: React.FC<InfoContainerProps> = ({ user, isOwnProfile = fals
           </span>
         </div>
       </div>
-      {/* Form chỉnh sửa */}
-      {isEditing && (
-        <SettingForm user={user} onClose={() => setIsEditing(false)} />
-      )}
+      
     </div>
   );
 };

@@ -3,9 +3,10 @@ import Post from "./Post";
 import { postService, type PostItem } from "../services/postService";
 import type { SortOrder, StatusFilter } from "./PostFilterBar";
 
+// Interface dành riêng cho hiển thị tại UI
 export interface PostData {
   id: string | number;
-  userId?: string ;
+  userId?: string;
   fullName: string;
   authorAvatar?: string;
   title?: string;
@@ -23,10 +24,14 @@ interface PostListProps {
   isFriend?: boolean;
 }
 
+/**
+ * Mapper: Chuyển đổi từ kiểu dữ liệu Service (PostItem) sang kiểu dữ liệu UI (PostData)
+ * Đảm bảo khớp với các field bạn đã đặt tên trong Component Post.tsx
+ */
 const mapPostItemToPostData = (post: PostItem): PostData => ({
   id: post.id,
   userId: post.userId,
-  fullName: post.authorName ?? "Ẩn danh",
+  fullName: post.authorName ?? "Người dùng InteractHub",
   authorAvatar: post.authorAvatar,
   title: post.title,
   content: post.content ?? "",
@@ -51,34 +56,45 @@ const PostList: React.FC<PostListProps> = ({
       setLoading(true);
       setError(null);
       try {
-        const res = await postService.getPostsByUserId(String(userId));
-        let data = res.data.map(mapPostItemToPostData);
+        /**
+         * LOGIC QUAN TRỌNG: 
+         * 1. Nếu không có userId (Trang chủ): Gọi getAllPosts()
+         * 2. Nếu có userId (Trang cá nhân): Gọi getPostsByUserId()
+         */
+        const response = (userId && userId !== "null")
+          ? await postService.getPostsByUserId(String(userId))
+          : await postService.getAllPosts();
 
-        // ── Lọc theo quyền xem ──────────────────────────────
-        if (!isOwnProfile) {
+        // postService đã thực hiện mapPost(res.data.Data) nên response.data là PostItem[]
+        let data = response.data.map(mapPostItemToPostData);
+
+        // ── 1. Lọc theo quyền xem (Privacy) ──────────────────────────
+        // Chỉ áp dụng lọc thủ công ở FE khi xem Profile của người khác.
+        // Trên Newsfeed (userId = null), Backend thường đã lọc sẵn bài Public.
+        if (userId && !isOwnProfile) {
           data = data.filter((p) => {
-            if (p.status === 1) return true;          // công khai: ai cũng thấy
-            if (p.status === 2 && isFriend) return true; // bạn bè: chỉ bạn thấy
-            return false;                              // riêng tư: không ai thấy
+            if (p.status === 1) return true;             // Công khai: Hiện cho tất cả
+            if (p.status === 2 && isFriend) return true;    // Bạn bè: Hiện nếu là bạn
+            return false;                                 // Riêng tư: Ẩn
           });
         }
 
-        // ── Lọc theo statusFilter (chỉ áp dụng khi là chủ trang hoặc bạn bè) ──
+        // ── 2. Lọc theo thanh FilterBar (nếu có) ─────────────────────
         if (statusFilter !== "all") {
           data = data.filter((p) => String(p.status) === statusFilter);
         }
 
-        // ── Sắp xếp ─────────────────────────────────────────
-        data = data.sort((a, b) =>
-          sort === "oldest"
-            ? new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
-            : new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-        );
+        // ── 3. Sắp xếp thời gian ─────────────────────────────────────
+        data = data.sort((a, b) => {
+          const timeA = new Date(a.createdAt).getTime();
+          const timeB = new Date(b.createdAt).getTime();
+          return sort === "oldest" ? timeA - timeB : timeB - timeA;
+        });
 
         setPosts(data);
       } catch (err) {
         console.error("Lỗi khi lấy danh sách bài viết:", err);
-        setError("Không thể tải bài viết. Vui lòng thử lại.");
+        setError("Không thể tải bài viết vào lúc này.");
         setPosts([]);
       } finally {
         setLoading(false);
@@ -88,26 +104,46 @@ const PostList: React.FC<PostListProps> = ({
     fetchPosts();
   }, [userId, sort, statusFilter, isOwnProfile, isFriend]);
 
+  // Giao diện khi đang tải (Skeleton)
   if (loading) {
     return (
       <div className="space-y-4">
         {[1, 2, 3].map((i) => (
-          <div key={i} className="h-64 bg-[#242526] rounded-xl border border-gray-800 animate-pulse" />
+          <div 
+            key={i} 
+            className="h-80 w-full bg-[#242526] rounded-xl border border-gray-800 animate-pulse" 
+          />
         ))}
       </div>
     );
   }
 
+  // Giao diện khi gặp lỗi
   if (error) {
-    return <p className="text-center text-red-500 py-10">{error}</p>;
+    return (
+      <div className="text-center py-10 bg-[#242526] rounded-xl border border-gray-800">
+        <p className="text-red-400 font-medium">{error}</p>
+        <button 
+          onClick={() => window.location.reload()}
+          className="mt-4 text-blue-500 hover:underline text-sm"
+        >
+          Thử tải lại trang
+        </button>
+      </div>
+    );
   }
 
   return (
     <div className="space-y-4">
       {posts.length > 0 ? (
-        posts.map((post) => <Post key={post.id} post={post} />)
+        posts.map((post) => (
+          <Post key={post.id} post={post} />
+        ))
       ) : (
-        <p className="text-center text-gray-500 py-10">Chưa có bài viết nào.</p>
+        <div className="text-center py-20 bg-[#242526] rounded-xl border border-gray-800">
+          <p className="text-gray-500 text-lg">Chưa có bài viết nào để hiển thị.</p>
+          <p className="text-gray-600 text-sm mt-1">Hãy đăng bài hoặc kết bạn để xem thêm nội dung.</p>
+        </div>
       )}
     </div>
   );
