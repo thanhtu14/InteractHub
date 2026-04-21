@@ -73,4 +73,19 @@ public class PostsController : ControllerBase
         var result = await _postService.UpdatePostAsync(postId, userId, dto);
         return result.ToActionResult(this);
     }
+
+
+
+    // ✅ Endpoint tìm kiếm bài viết
+    [HttpGet("search")]
+    public async Task<IActionResult> SearchPosts([FromQuery] string keyword)
+    {
+        if (string.IsNullOrWhiteSpace(keyword))
+            return Ok(new List<PostResponseDto>());
+
+        var result = await _postService.SearchPostsAsync(keyword);
+        return result.ToActionResult(this);
+    }
+
+
 }

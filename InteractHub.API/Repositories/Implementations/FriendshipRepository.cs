@@ -55,14 +55,14 @@ public class FriendshipRepository : IFriendshipRepository
         {
             return new FriendshipStatusDto
             {
-                status = null,
+                Status = null,
                 isRequester = false
             };
         }
 
         return new FriendshipStatusDto
         {
-            status = friendship.Status,
+            Status = friendship.Status,
             isRequester = friendship.RequesterId == userId
         };
     }

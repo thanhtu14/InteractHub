@@ -3,6 +3,7 @@ using InteractHub.API.DTOs.User;
 using InteractHub.API.Entities;
 using InteractHub.API.Services.Interfaces;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
 
 namespace InteractHub.API.Services.Implementations;
 
@@ -36,14 +37,14 @@ public class UserService : IUserService
         if (user == null)
             return Result<UserDto>.NotFound("Người dùng không tồn tại.");
 
-        user.FullName    = dto.UserName;
+        user.FullName = dto.UserName;
         user.PhoneNumber = dto.Phone;
         user.DateOfBirth = dto.DateOfBirth;
-        user.Bio         = dto.Bio;
-        user.Gender      = dto.Gender;
+        user.Bio = dto.Bio;
+        user.Gender = dto.Gender;
 
         if (!string.IsNullOrEmpty(dto.AvatarUrl)) user.ProfilePicture = dto.AvatarUrl;
-        if (!string.IsNullOrEmpty(dto.CoverUrl))  user.CoverUrl       = dto.CoverUrl;
+        if (!string.IsNullOrEmpty(dto.CoverUrl)) user.CoverUrl = dto.CoverUrl;
 
         var updateResult = await _userManager.UpdateAsync(user);
         if (!updateResult.Succeeded)
@@ -114,16 +115,62 @@ public class UserService : IUserService
 
     private static UserDto MapToDto(User user) => new()
     {
-        Id          = user.Id,
-        Username    = user.FullName ?? user.UserName ?? "",
-        Email       = user.Email   ?? "",
-        Phone       = user.PhoneNumber,
-        AvatarUrl   = user.ProfilePicture,
-        CoverUrl    = user.CoverUrl,
-        Bio         = user.Bio,
+        Id = user.Id,
+        Username = user.FullName ?? user.UserName ?? "",
+        Email = user.Email ?? "",
+        Phone = user.PhoneNumber,
+        ProfilePicture = user.ProfilePicture,
+        CoverUrl = user.CoverUrl,
+        Bio = user.Bio,
         DateOfBirth = user.DateOfBirth,
-        Gender      = user.Gender,
-        CreatedAt   = user.CreatedAt,
-        Roles       = new List<string> { "User" },
+        Gender = user.Gender,
+        CreatedAt = user.CreatedAt,
+        Roles = new List<string> { "User" },
     };
+
+
+
+
+
+
+
+
+
+    // ✅ Tìm kiếm user theo FullName hoặc UserName, loại bỏ chính mình
+public async Task<Result<IEnumerable<UserSearchDto>>> SearchUsersAsync(
+    string keyword,
+    string? currentUserId)
+{
+    if (string.IsNullOrWhiteSpace(keyword))
+        return Result<IEnumerable<UserSearchDto>>.Ok(new List<UserSearchDto>());
+
+    var lower = keyword.ToLower();
+
+    var users = await _userManager.Users
+        .Where(u =>
+            u.Status == 1 &&
+            (currentUserId == null || u.Id != currentUserId) &&
+
+            (
+                EF.Functions.Like(u.FullName, $"%{keyword}%") ||
+                EF.Functions.Like(u.UserName, $"%{keyword}%")
+            )
+        )
+        .Take(20)
+        .ToListAsync();
+
+    var result = users.Select(u => new UserSearchDto
+    {
+        Id = u.Id,
+        Username = u.UserName ?? "",
+        FullName = u.FullName,
+        ProfilePicture = u.ProfilePicture,
+        MutualFriends = 0,
+        FriendshipStatus = "None"
+    });
+
+    return Result<IEnumerable<UserSearchDto>>.Ok(result);
+}
+
+
 }

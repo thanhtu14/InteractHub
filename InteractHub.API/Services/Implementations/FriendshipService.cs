@@ -100,7 +100,7 @@ public class FriendshipService : IFriendshipService
 
         return Result<FriendshipStatusDto>.Ok(new FriendshipStatusDto
         {
-            status = friendship?.Status,
+            Status = friendship?.Status,
             isRequester = friendship?.RequesterId == userId
         });
     }
@@ -135,7 +135,7 @@ public class FriendshipService : IFriendshipService
             {
                 Id = friendUser?.Id ?? "",
                 Username = friendUser?.FullName ?? friendUser?.UserName ?? "",
-                AvatarUrl = friendUser?.ProfilePicture ?? ""
+                ProfilePicture = friendUser?.ProfilePicture ?? ""
             };
         }));
     }
@@ -157,7 +157,7 @@ public class FriendshipService : IFriendshipService
         ReceiverId = f.ReceiverId ?? "",
         Status = f.Status,
         RequesterName = f.Requester?.FullName ?? "Unknown",
-        AvatarUrl = f.Requester?.ProfilePicture ?? "",
+        ProfilePicture = f.Requester?.ProfilePicture ?? "",
         CreatedAt = f.CreatedAt
     };
 }

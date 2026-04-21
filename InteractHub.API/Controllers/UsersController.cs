@@ -81,4 +81,19 @@ public class UsersController : ControllerBase
         var result = await _userService.UpdateCoverAsync(userId, url);
         return result.ToActionResult(this);
     }
+
+
+
+
+    // ✅ Endpoint tìm kiếm user theo tên hoặc username
+    [HttpGet("search")]
+    public async Task<IActionResult> SearchUsers([FromQuery] string keyword, [FromQuery] string? currentUserId)
+    {
+        if (string.IsNullOrWhiteSpace(keyword))
+            return Ok(new List<UserSearchDto>());
+
+        var result = await _userService.SearchUsersAsync(keyword, currentUserId);
+        return result.ToActionResult(this);
+    }
+
 }

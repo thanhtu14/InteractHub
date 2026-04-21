@@ -17,5 +17,5 @@ public class FriendshipResponseDto
     // Bạn có thể thêm các thông tin bổ sung để hiển thị trên UI
     public string? RequesterName { get; set; }
     public string? ReceiverName { get; set; }
-    public string? AvatarUrl { get; set; }
+    public string? ProfilePicture { get; set; }
 }

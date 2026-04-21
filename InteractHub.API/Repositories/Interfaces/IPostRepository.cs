@@ -15,4 +15,8 @@ public interface IPostRepository
     Task<IEnumerable<Post>> GetPostsWithDetailsAsync(); // Lấy bảng tin chung
     Task<IEnumerable<Post>> GetPostsByUserIdAsync(string userId); // Lấy bài viết của 1 người
     Task<Post?> GetPostDetailsByIdAsync(int id); // Lấy chi tiết 1 bài viết kèm Media/Like/Comment
+
+    Task<IEnumerable<Post>> SearchPostsAsync(string keyword);
+
+
 }

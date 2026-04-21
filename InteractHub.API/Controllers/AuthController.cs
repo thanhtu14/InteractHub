@@ -136,7 +136,7 @@ public class AuthController : ControllerBase
             Id       = user.Id,
             Username = user.FullName ?? user.UserName ?? "User",
             Email    = user.Email ?? "",
-            AvatarUrl = user.ProfilePicture,
+            ProfilePicture = user.ProfilePicture,
             Roles    = roles.ToList()
         };
 

@@ -8,6 +8,7 @@ import OAuthCallbackPage from "./pages/OAuthCallbackPage";
 
 import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+import SearchPage from "./pages/user/SearchPage";
 
 function App() {
   return (
@@ -16,6 +17,7 @@ function App() {
         <Route path="/" element={<Navigate to="/login" />} />
         <Route path="/login" element={<LoginRoute><Login /></LoginRoute>} />
         <Route path="/oauth-callback" element={<OAuthCallbackPage />} />
+        <Route path="/search" element={<SearchPage />} />
         {UserRoutes}
         {AdminRoutes}
       </Routes>

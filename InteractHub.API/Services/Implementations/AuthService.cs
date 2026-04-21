@@ -117,7 +117,7 @@ public class AuthService : IAuthService
                 Id        = user.Id,
                 Username  = user.FullName ?? user.UserName ?? "",
                 Email     = user.Email ?? "",
-                AvatarUrl = user.ProfilePicture,
+                ProfilePicture = user.ProfilePicture,
                 Roles     = roles.ToList()
             }
         };

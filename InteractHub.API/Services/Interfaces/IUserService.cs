@@ -10,4 +10,8 @@ public interface IUserService
     Task<Result<UserDto>> UpdateProfileAsync(string userId, UpdateProfileDto dto);
     Task<Result<string>> UpdateAvatarAsync(string userId, string avatarUrl);
     Task<Result<string>> UpdateCoverAsync(string userId, string coverUrl);
+
+
+    Task<Result<IEnumerable<UserSearchDto>>> SearchUsersAsync(string keyword, string? currentUserId);
+
 }
