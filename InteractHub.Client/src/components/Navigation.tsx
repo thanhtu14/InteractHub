@@ -139,7 +139,8 @@ const Navbar: React.FC<NavbarProps> = ({ user: propUser, onChatClick, onNotifyCl
         const res = await axios.get("https://localhost:7069/api/users/search", {
           params: { keyword: debouncedSearch, currentUserId: currentUser?.Id },
         });
-        setResults(res.data.data || []);
+        console.log("SEARCH RESPONSE:", res.data); 
+        setResults(res.data.Data || []);
         setShowDropdown(true);
       } catch {
         setResults([]);

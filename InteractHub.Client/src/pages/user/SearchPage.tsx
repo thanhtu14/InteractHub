@@ -77,11 +77,11 @@ const SearchPage = () => {
 
       if (peopleRes.status === "fulfilled") {
         const data = peopleRes.value.data;
-        setPeople(Array.isArray(data) ? data : data?.data ?? []);
+        setPeople(Array.isArray(data) ? data : data?.Data ?? []);
       }
       if (postsRes.status === "fulfilled") {
         const data = postsRes.value.data;
-        setPosts(Array.isArray(data) ? data : data?.data ?? []);
+        setPosts(Array.isArray(data) ? data : data?.Data ?? []);
       }
     } finally {
       setLoading(false);
