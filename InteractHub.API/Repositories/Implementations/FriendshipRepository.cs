@@ -77,4 +77,12 @@ public class FriendshipRepository : IFriendshipRepository
         // Đánh dấu thực thể là Modified để EF tạo câu lệnh UPDATE thay vì INSERT
         _context.Friendships.Update(friendship);
     }
+    public async Task<IEnumerable<string>> GetFriendIdsAsync(string userId)
+{
+    return await _context.Friendships
+        .Where(f => f.Status == 1 && // 1 = đã chấp nhận (khớp với GetFriendsAsync của bạn)
+            (f.RequesterId == userId || f.ReceiverId == userId))
+        .Select(f => f.RequesterId == userId ? f.ReceiverId! : f.RequesterId!)
+        .ToListAsync();
+}
 }

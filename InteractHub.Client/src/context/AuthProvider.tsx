@@ -1,5 +1,7 @@
 import React, { useState,type ReactNode } from "react";
 import { AuthContext,type User } from "./AuthContext";
+import { signalRService } from "../services/signalRService";
+import { useEffect } from "react";
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   // ✅ Giải pháp: Đọc trực tiếp từ localStorage khi khởi tạo (Lazy Initialization)
@@ -23,6 +25,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   // isLoading bây giờ có thể mặc định là false vì dữ liệu đã có ngay từ đầu
   const [isLoading] = useState(false);
+  
 
   const login = (userData: User, newToken: string) => {
     setToken(newToken);
@@ -32,14 +35,33 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const logout = () => {
-    setToken(null);
-    setUser(null);
-    localStorage.removeItem("interact_hub_token");
-    localStorage.removeItem("interact_hub_user");
-  };
+  signalRService.stop(); // ✅ đúng chỗ
+  setToken(null);
+  setUser(null);
+  localStorage.removeItem("interact_hub_token");
+  localStorage.removeItem("interact_hub_user");
+};
 
   const isAdmin = user?.Roles?.includes("Admin") ?? false;
+useEffect(() => {
+  if (!token) return;
 
+  signalRService.build(token);
+
+  const startConnection = async () => {
+    try {
+      await signalRService.start();
+    } catch (err) {
+      console.error("SignalR start failed:", err);
+    }
+  };
+
+  startConnection();
+
+  return () => {
+    // ❌ KHÔNG stop ở đây nữa
+  };
+}, [token]);
   return (
     <AuthContext.Provider 
       value={{ user, token, isAuthenticated: !!token, isAdmin, isLoading, login, logout }}

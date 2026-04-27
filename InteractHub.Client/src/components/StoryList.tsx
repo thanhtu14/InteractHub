@@ -172,12 +172,16 @@ userList.sort((a, b) => {
 
     return (
         <div className="relative w-full group px-2">
-            <button onClick={() => scroll("left")} className="absolute left-4 top-1/2 -translate-y-1/2 z-20 w-10 h-10 rounded-full bg-[#3e4042] flex items-center justify-center text-white opacity-0 group-hover:opacity-100 transition-opacity">
-                <FaChevronLeft />
-            </button>
-            <button onClick={() => scroll("right")} className="absolute right-4 top-1/2 -translate-y-1/2 z-20 w-10 h-10 rounded-full bg-[#3e4042] flex items-center justify-center text-white opacity-0 group-hover:opacity-100 transition-opacity">
-                <FaChevronRight />
-            </button>
+            {userList.length >= 6 && (
+                <>
+                    <button onClick={() => scroll("left")} className="absolute left-4 top-1/2 -translate-y-1/2 z-20 w-10 h-10 rounded-full bg-[#3e4042] flex items-center justify-center text-white opacity-0 group-hover:opacity-100 transition-opacity">
+                        <FaChevronLeft />
+                    </button>
+                    <button onClick={() => scroll("right")} className="absolute right-4 top-1/2 -translate-y-1/2 z-20 w-10 h-10 rounded-full bg-[#3e4042] flex items-center justify-center text-white opacity-0 group-hover:opacity-100 transition-opacity">
+                        <FaChevronRight />
+                    </button>
+                </>
+            )}
 
             {/* SCROLL CONTAINER */}
             <div ref={scrollRef} className="flex gap-2.5 overflow-x-auto no-scrollbar py-2 px-2 scroll-smooth">

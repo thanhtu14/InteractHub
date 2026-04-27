@@ -12,6 +12,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.Extensions.FileProviders;
 using InteractHub.API.Common.Middlewares;
+using InteractHub.API.Hubs; // ✅ thêm
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -39,12 +40,12 @@ builder.Services.AddScoped<IFriendshipRepository, FriendshipRepository>();
 builder.Services.AddScoped<IFriendshipService, FriendshipService>();
 builder.Services.AddScoped<INotificationRepository, NotificationRepository>();
 builder.Services.AddScoped<INotificationService, NotificationService>();
-builder.Services.AddScoped<IPostRepository, PostRepository>(); // Đăng ký Repository trước
+builder.Services.AddScoped<IPostRepository, PostRepository>();
 builder.Services.AddScoped<IPostService, PostService>();
-builder.Services.AddScoped<IMediaService,MediaService>(); // Đăng ký Repository trước
-builder.Services.AddScoped<IHashtagRepository, HashtagRepository>(); // Đăng ký Repository trước
+builder.Services.AddScoped<IMediaService, MediaService>();
+builder.Services.AddScoped<IHashtagRepository, HashtagRepository>();
 builder.Services.AddScoped<IHashtagService, HashtagService>();
-builder.Services.AddScoped<IPostHashtagRepository, PostHashtagRepository>(); // Đăng ký Repository trước
+builder.Services.AddScoped<IPostHashtagRepository, PostHashtagRepository>();
 builder.Services.AddScoped<ILikeRepository, LikeRepository>();
 builder.Services.AddScoped<ILikeService, LikeService>();
 builder.Services.AddScoped<ICommentRepository, CommentRepository>();
@@ -55,9 +56,8 @@ builder.Services.AddScoped<IPostReportRepository, PostReportRepository>();
 builder.Services.AddScoped<IPostReportService, PostReportService>();
 builder.Services.AddScoped<IStoryRepository, StoryRepository>();
 builder.Services.AddScoped<IStoryService, StoryService>();
-
-// builder.Services.AddScoped<IPostService, PostService>();
-
+builder.Services.AddScoped<IMessageRepository, MessageRepository>();
+builder.Services.AddScoped<IMessageService, MessageService>();
 // ── 4. JWT Authentication ────────────────────────────────────────
 var jwtSettings = builder.Configuration.GetSection("JwtSettings");
 var secretKey   = jwtSettings["SecretKey"]!;
@@ -89,8 +89,19 @@ builder.Services.AddAuthentication(options =>
         ClockSkew                = TimeSpan.Zero
     };
 
+    // ✅ Thêm: cho phép SignalR gửi token qua query string
     options.Events = new JwtBearerEvents
     {
+        OnMessageReceived = context =>
+        {
+            var accessToken = context.Request.Query["access_token"];
+            var path = context.HttpContext.Request.Path;
+            if (!string.IsNullOrEmpty(accessToken) && path.StartsWithSegments("/hubs/chat"))
+            {
+                context.Token = accessToken;
+            }
+            return Task.CompletedTask;
+        },
         OnAuthenticationFailed = context =>
         {
             Console.WriteLine("JWT Error: " + context.Exception.Message);
@@ -136,16 +147,18 @@ builder.Services.AddCors(options =>
         policy.WithOrigins("http://localhost:5173")
               .AllowAnyHeader()
               .AllowAnyMethod()
-              .AllowCredentials();
+              .AllowCredentials(); // ✅ bắt buộc cho SignalR
     });
 });
 
-// ── 8. Controllers + JSON config ─────────────────────────────────
+// ── 8. Controllers + JSON + SignalR ──────────────────────────────
 builder.Services.AddControllers()
     .AddJsonOptions(options =>
     {
-        options.JsonSerializerOptions.PropertyNamingPolicy = null; // Giữ nguyên PascalCase
+        options.JsonSerializerOptions.PropertyNamingPolicy = null;
     });
+
+builder.Services.AddSignalR(); // ✅ thêm
 
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
@@ -156,7 +169,6 @@ var app = builder.Build();
 using (var scope = app.Services.CreateScope())
 {
     var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>();
-
     foreach (var role in new[] { "User", "Admin" })
     {
         if (!await roleManager.RoleExistsAsync(role))
@@ -170,22 +182,18 @@ if (app.Environment.IsDevelopment())
     app.UseSwagger();
     app.UseSwaggerUI();
 }
+
 app.UseMiddleware<ExceptionMiddleware>();
 app.UseHttpsRedirection();
-app.UseCors("AllowReactApp");
+app.UseCors("AllowReactApp"); // ✅ phải trước UseAuthentication và MapHub
 app.UseCookiePolicy();
 
-
-
 // ── 11. Static Files ──────────────────────────────────────────────
-// Serve wwwroot mặc định (index.html, css, js,...)
 app.UseStaticFiles();
 
-// Serve riêng thư mục wwwroot/images/avatars qua URL /avatars/...
-// Ví dụ: https://localhost:7069/avatars/abc123.jpg
 var avatarsPath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "images", "avatars");
 if (!Directory.Exists(avatarsPath))
-    Directory.CreateDirectory(avatarsPath); // Tự tạo thư mục nếu chưa có
+    Directory.CreateDirectory(avatarsPath);
 
 app.UseStaticFiles(new StaticFileOptions
 {
@@ -197,7 +205,8 @@ app.UseStaticFiles(new StaticFileOptions
 app.UseAuthentication();
 app.UseAuthorization();
 
-// ── 13. Map Controllers ──────────────────────────────────────────
+// ── 13. Map Controllers & Hubs ───────────────────────────────────
 app.MapControllers();
+app.MapHub<ChatHub>("/hubs/chat"); // ✅ thêm
 
 app.Run();

@@ -53,7 +53,7 @@ public class PostRepository : IPostRepository
     {
         return await _context.Posts
             .Where(p => p.UserId == userId)
-            .Include(p => p.User)       
+            .Include(p => p.User)
             .Include(p => p.PostMedias)
             .OrderByDescending(p => p.CreatedAt)
             .ToListAsync();
@@ -68,5 +68,31 @@ public class PostRepository : IPostRepository
             // .Include(p => p.Likes)
             // .Include(p => p.Comments)
             .FirstOrDefaultAsync(p => p.Id == id);
+    }
+    public async Task<(IEnumerable<Post> Posts, int TotalCount)> GetHomeFeedPagedAsync(
+     string currentUserId,
+     IEnumerable<string> friendIds,
+     int page,
+     int pageSize)
+    {
+        var friendIdSet = friendIds.ToHashSet();
+
+        var query = _context.Posts
+            .Include(p => p.User)
+            .Include(p => p.PostMedias)
+            .Where(p =>
+                (p.Status == 1 && p.UserId != currentUserId) ||
+                (p.Status == 2 && friendIdSet.Contains(p.UserId!))
+            )
+            .OrderByDescending(p => p.CreatedAt);
+
+        var totalCount = await query.CountAsync();
+
+        var posts = await query
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
+            .ToListAsync();
+
+        return (posts, totalCount);
     }
 }

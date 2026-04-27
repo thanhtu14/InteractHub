@@ -11,4 +11,5 @@ public interface IPostService
     Task<Result<PostResponseDto>> GetPostByIdAsync(int postId);
     Task<Result<string>> DeletePostAsync(int postId, string userId);
     Task<Result<PostResponseDto>> UpdatePostAsync(int postId, string userId, PostUpdateDto dto);
+    Task<Result<PagedPostResponseDto>> GetHomeFeedAsync(string currentUserId, int page, int pageSize);
 }

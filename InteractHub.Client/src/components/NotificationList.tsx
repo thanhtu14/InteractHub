@@ -4,32 +4,8 @@ import {
   notificationService,
   type NotificationItem,
 } from "../services/notificationService";
+import { getTimeAgo } from "../utils/timeUtils"; // ✅ Tái sử dụng hàm định dạng thời gian chuẩn
 
-// ✅ Cập nhật hàm formatTime chuẩn xác như bên Comment
-const formatTime = (dateString?: string | null): string => {
-  if (!dateString) return "";
-
-  // Chuẩn hóa format: Thay khoảng trắng bằng 'T' và thêm 'Z' (UTC)
-  const normalizedDate = dateString.replace(" ", "T") + "Z";
-  const now = new Date();
-  const past = new Date(normalizedDate);
-
-  const diffInSeconds = Math.floor((now.getTime() - past.getTime()) / 1000);
-
-  if (diffInSeconds < 60) return "Vừa xong";
-
-  const diffInMinutes = Math.floor(diffInSeconds / 60);
-  if (diffInMinutes < 60) return `${diffInMinutes} phút trước`;
-
-  const diffInHours = Math.floor(diffInMinutes / 60);
-  if (diffInHours < 24) return `${diffInHours} giờ trước`;
-
-  const diffInDays = Math.floor(diffInHours / 24);
-  if (diffInDays === 1) return "Hôm qua";
-  if (diffInDays < 7) return `${diffInDays} ngày trước`;
-
-  return `${Math.floor(diffInDays / 7)} tuần trước`;
-};
 
 const getTypeIcon = (type: string): string => {
   switch (type.toUpperCase()) {
@@ -213,7 +189,7 @@ const markAsRead = async (id: number, link?: string) => {
                     notif.isRead ? "text-gray-500" : "text-blue-400 font-semibold"
                   }`}>
                     {/* ✅ Gọi hàm format đã sửa */}
-                    {formatTime(notif.createdAt)}
+                    {getTimeAgo(notif.createdAt)}
                   </p>
                 </div>
 

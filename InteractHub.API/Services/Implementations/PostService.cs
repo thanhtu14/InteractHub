@@ -12,17 +12,20 @@ public class PostService : IPostService
     private readonly IMediaService _mediaService;
     private readonly IHashtagService _hashtagService;
     private readonly IPostHashtagRepository _postHashtagRepo;
+    private readonly IFriendshipRepository _friendshipRepo;
 
     public PostService(
         IPostRepository postRepo,
         IMediaService mediaService,
         IHashtagService hashtagService,
-        IPostHashtagRepository postHashtagRepo)
+        IPostHashtagRepository postHashtagRepo,
+        IFriendshipRepository friendshipRepo)
     {
         _postRepo = postRepo;
         _mediaService = mediaService;
         _hashtagService = hashtagService;
         _postHashtagRepo = postHashtagRepo;
+        _friendshipRepo = friendshipRepo;
     }
 
     public async Task<Result<PostResponseDto>> CreatePostAsync(string userId, PostCreateDto dto)
@@ -180,4 +183,18 @@ public class PostService : IPostService
         CreatedAt = p.CreatedAt,
         MediaUrls = p.PostMedias?.Select(m => m.Url).ToList() ?? new List<string>()
     };
+    public async Task<Result<PagedPostResponseDto>> GetHomeFeedAsync(
+    string currentUserId, int page = 1, int pageSize = 10)
+    {
+        var friendIds = await _friendshipRepo.GetFriendIdsAsync(currentUserId);
+        var (posts, totalCount) = await _postRepo.GetHomeFeedPagedAsync(
+            currentUserId, friendIds, page, pageSize);
+
+        return Result<PagedPostResponseDto>.Ok(new PagedPostResponseDto
+        {
+            Posts = posts.Select(MapToDto).ToList(),
+            TotalCount = totalCount,
+            HasMore = page * pageSize < totalCount
+        });
+    }
 }

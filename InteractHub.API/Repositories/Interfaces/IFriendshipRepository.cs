@@ -14,4 +14,5 @@ public interface IFriendshipRepository
     void Delete(Friendship friendship); // Xóa khỏi tracking, cần SaveChanges sau đó
     Task SaveChangesAsync();
     void Update(Friendship friendship);
+    Task<IEnumerable<string>> GetFriendIdsAsync(string userId);
 }

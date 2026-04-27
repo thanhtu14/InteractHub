@@ -11,11 +11,13 @@ public class FriendshipService : IFriendshipService
 {
     private readonly IFriendshipRepository _friendshipRepo;
     private readonly INotificationService _notificationService;
+    private readonly IMessageService _messagingService;
 
-    public FriendshipService(IFriendshipRepository friendshipRepo, INotificationService notificationService)
+    public FriendshipService(IFriendshipRepository friendshipRepo, INotificationService notificationService, IMessageService messagingService)
     {
         _friendshipRepo = friendshipRepo;
         _notificationService = notificationService;
+        _messagingService = messagingService;
     }
 
     public async Task<Result<FriendshipResponseDto>> SendRequestAsync(FriendRequestDto dto)
@@ -73,6 +75,8 @@ public class FriendshipService : IFriendshipService
                 "đã chấp nhận lời mời kết bạn của bạn.", // Nội dung
                 1                           // Count (với kết bạn thì để là 1)
             );
+            // Tạo cuộc trò chuyện mới giữa hai người bạn
+            await _messagingService.GetOrCreateConversationAsync(friendship.RequesterId, friendship.ReceiverId);
         }
         else
         {

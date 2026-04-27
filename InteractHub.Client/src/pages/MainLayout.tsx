@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { Outlet } from "react-router-dom";
 import { FaChevronRight } from "react-icons/fa";
 import Navbar from "../components/Navigation";
-import FriendList from "../components/ListFriends";
+import ConversationList from "../components/ConversationList";
 import NotificationList from "../components/NotificationList";
 import { useAuth } from "../context/useAuth";
 
@@ -53,7 +53,12 @@ const MainLayout: React.FC = () => {
               <div className="flex-1 overflow-y-auto no-scrollbar px-2 pb-2">
                 {rightSidebarView === "friends" ? (
                   <div className="animate-in fade-in slide-in-from-right-5 duration-500">
-                    {user && <FriendList userId={user.Id} />}
+                    {user && (
+                      <ConversationList
+                        userId={user.Id}
+                        isSidebarOpen={isOpen}   // 👈 thêm dòng này
+                      />
+                    )}
                   </div>
                 ) : (
                   <div className="animate-in fade-in slide-in-from-right-5 duration-500">

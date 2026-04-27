@@ -73,4 +73,14 @@ public class PostsController : ControllerBase
         var result = await _postService.UpdatePostAsync(postId, userId, dto);
         return result.ToActionResult(this);
     }
+    [HttpGet("feed")]
+[Authorize]
+public async Task<IActionResult> GetHomeFeed([FromQuery] int page = 1, [FromQuery] int pageSize = 10)
+{
+    var userId = GetUserId();
+    if (string.IsNullOrEmpty(userId)) return Unauthorized();
+
+    var result = await _postService.GetHomeFeedAsync(userId, page, pageSize);
+    return result.ToActionResult(this);
+}
 }

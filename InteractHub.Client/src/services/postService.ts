@@ -52,7 +52,11 @@ const mapPost = (p: PostResponseDto): PostItem => ({
   createdAt: p.CreatedAt,
   mediaUrls: p.MediaUrls || [],
 });
-
+export interface PagedPostResponse {
+  posts: PostItem[];
+  totalCount: number;
+  hasMore: boolean;
+}
 
 
 // ── 5. Export Service ───────────────────────────────────────────
@@ -101,4 +105,17 @@ export const postService = {
   reportPost: (request: PostReportRequest) =>
     axiosInstance
       .post<{ Success: boolean; Message: string }>("/api/post-reports", request),
+  getHomeFeed: (page: number = 1, pageSize: number = 10) =>
+  axiosInstance
+    .get<{ Success: boolean; Data: { Posts: PostResponseDto[]; TotalCount: number; HasMore: boolean } }>(
+      `/api/post/feed?page=${page}&pageSize=${pageSize}`
+    )
+    .then((res) => ({
+      ...res,
+      data: {
+        posts: res.data.Data.Posts.map(mapPost),
+        totalCount: res.data.Data.TotalCount,
+        hasMore: res.data.Data.HasMore,
+      } as PagedPostResponse,
+    })),
 };

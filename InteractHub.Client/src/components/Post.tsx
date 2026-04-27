@@ -448,9 +448,10 @@ const Post = ({ post, autoOpenComments = false }: PostProps) => {
       {showComments && (
         <div className="border-t border-[#3e4042]">
           <CommentSection
-            postId={Number(post.id)}
-            onClose={() => setShowComments(false)}
-          />
+  postId={Number(post.id)}
+  post={post} // ✅ thêm dòng này
+  onClose={() => setShowComments(false)}
+/>
         </div>
       )}
 
