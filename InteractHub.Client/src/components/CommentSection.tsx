@@ -2,12 +2,13 @@ import React, { useState, useEffect, useRef } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import Comment from "./Comment";
 import { commentService, type CommentResponse } from "../services/commetService";
+import { type PostData } from "./ContainerPost";
 import { resolveUrl } from "../utils/urlUtils";
 
 interface CommentSectionProps {
   postId: number;
   authorId: string | undefined; // ✅ thêm prop authorId
-  post: any;
+  post: PostData;
   onClose: () => void;
 }
 
@@ -220,6 +221,7 @@ const CommentSection: React.FC<CommentSectionProps> = ({ postId, authorId, post,
                     postId={postId}
                     parentUserName={comment.ParentUserName}
                     highlighted={comment.Id === highlightedCommentId}
+                    postAuthorId={authorId} // ✅ truyền authorId xuống Comment
                   />
                 </div>
               ))

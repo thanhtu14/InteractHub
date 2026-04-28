@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { commentService, type CommentResponse } from "../services/commetService";
 import {getTimeAgo} from "../utils/timeUtils"; // ✅ Tái sử dụng hàm định dạng thời gian chuẩn
 import {resolveUrl} from "../utils/urlUtils"; // ✅ Tái sử dụng hàm định dạng thời gian chuẩn
+import { useAuth } from "../context/useAuth";   // ✅ THÊM IMPORT NÀY
 
 interface CommentProps {
   comment: CommentResponse;
@@ -11,6 +12,7 @@ interface CommentProps {
   depth?: number;
   parentUserName?: string;
   highlighted?: boolean; // ✅ để highlight comment được navigate đến
+  postAuthorId?: string | undefined;
 }
 const Comment: React.FC<CommentProps> = ({
   comment,
@@ -19,6 +21,7 @@ const Comment: React.FC<CommentProps> = ({
   depth = 0,
   parentUserName,
   highlighted = false,
+  postAuthorId,
 }) => {
   const [isLiked, setIsLiked] = useState(comment.IsLikedByCurrentUser);
   const [likeCount, setLikeCount] = useState(comment.LikeCount);
@@ -28,8 +31,11 @@ const Comment: React.FC<CommentProps> = ({
   const [replies, setReplies] = useState<CommentResponse[]>(comment.Replies || []);
   const [showReplies, setShowReplies] = useState(false);
   const [isHighlighted, setIsHighlighted] = useState(highlighted);
+  const { user } = useAuth();                    // ✅ Lấy user đang đăng nhập
+  const currentUserId = user?.Id;
   const navigate = useNavigate();
   const commentRef = useRef<HTMLDivElement>(null);
+  const isPostAuthor = currentUserId && postAuthorId && currentUserId === postAuthorId;
 
   // 1. Tự động bung replies nếu URL chứa ID của comment con
   useEffect(() => {
@@ -150,6 +156,21 @@ const Comment: React.FC<CommentProps> = ({
           <button onClick={() => setShowReplyInput(!showReplyInput)} className="hover:underline">
             Phản hồi
           </button>
+          {/* ✅ NÚT ẨN BÌNH LUẬN - Chỉ hiện khi là chủ bài viết */}
+          {isPostAuthor && (
+            <button 
+              onClick={() => {
+                // TODO: Sau này sẽ gọi API ẩn comment
+                if (window.confirm(`Bạn có chắc muốn ẩn bình luận này không?`)) {
+                  alert("Chức năng ẩn bình luận đang được phát triển...");
+                  // Ví dụ sau này: await commentService.hide(comment.Id);
+                }
+              }}
+              className="hover:underline text-red-400 hover:text-red-500 transition"
+            >
+              Ẩn bình luận
+            </button>
+          )}
           <span className="font-normal opacity-70 cursor-default">
             {getTimeAgo(comment.CreatedAt)}
           </span>
@@ -187,6 +208,7 @@ const Comment: React.FC<CommentProps> = ({
                 comment={reply}
                 postId={postId}
                 depth={1}
+                postAuthorId={postAuthorId} // ✅ truyền authorId xuống Comment con để hiển thị nút ẩn nếu cần
                 parentUserName={reply.ParentUserName}
                 // Quan trọng: Truyền highlighted cho con nếu hash URL khớp với ID của nó
                 highlighted={window.location.hash === `#comment-${reply.Id}`}
