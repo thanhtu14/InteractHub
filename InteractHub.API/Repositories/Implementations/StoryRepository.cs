@@ -15,10 +15,11 @@ public class StoryRepository : IStoryRepository
     }
 
     public async Task<List<Story>> GetAllAsync()
-        => await _context.Stories
-            .Include(s => s.User)
-            .OrderByDescending(s => s.CreatedAt)
-            .ToListAsync();
+    => await _context.Stories
+        .Where(s => s.ExpiredAt > DateTime.UtcNow) // ✅ chỉ lấy story còn hạn
+        .Include(s => s.User)
+        .OrderByDescending(s => s.CreatedAt)
+        .ToListAsync();
 
     public async Task<Story?> GetByIdAsync(int id)
         => await _context.Stories
