@@ -1,8 +1,8 @@
 import React from "react";
-import { FaFilter, FaTh } from "react-icons/fa";
+import { FaFilter, FaTh, FaSort } from "react-icons/fa";
 
 export type SortOrder = "newest" | "oldest";
-export type StatusFilter = "all" | "1" | "2" | "3";
+export type StatusFilter = "all" | "1" | "2" | "3" | "0";
 
 interface PostFilterBarProps {
   sort: SortOrder;
@@ -32,6 +32,7 @@ const PostFilterBar: React.FC<PostFilterBarProps> = ({
         { value: "1",   label: "Công khai",  emoji: "🌍" },
         { value: "2",   label: "Bạn bè",     emoji: "👥" },
         { value: "3",   label: "Riêng tư",   emoji: "🔒" },
+        { value: "0",   label: "Bị vi phạm",   emoji: "⚠️" },
       ];
     }
     if (isFriend) {
@@ -84,6 +85,7 @@ const PostFilterBar: React.FC<PostFilterBarProps> = ({
         </div>
 
         <div className="flex items-center gap-1 bg-[#3a3b3c] rounded-lg p-1">
+          <FaSort size={12} className="text-gray-400 ml-1" />
           {(["newest", "oldest"] as SortOrder[]).map((s) => (
             <button
               key={s}

@@ -34,7 +34,7 @@ const FriendPage: React.FC = () => {
             <h2 className="text-xl font-bold text-white mb-4">
               Bạn bè
             </h2>
-            {user && <FriendList userId={user.Id} />}
+            {user && <FriendList/>}
           </div>
 
         </div>

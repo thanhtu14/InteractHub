@@ -1,12 +1,14 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom"; // ✅ thêm import
-
+import { PhotoProvider, PhotoView } from "react-photo-view";
+import "react-photo-view/dist/react-photo-view.css";
 import CommentSection from "./CommentSection";
 import ReactionModal from "../components/ReactionDetailsModal";
 import { likeService } from "../services/likeService";
 import { commentService } from "../services/commetService";
 import ReportModal from "../components/ReportModal";
 import { resolveUrl } from "../utils/urlUtils"; // ✅ Tái sử dụng hàm định dạng thời gian chuẩn 
+import ShareModal from "./ShareModal"; // Thay đổi đường dẫn cho đúng
 
 interface PostProps {
   post: {
@@ -35,6 +37,7 @@ const REACTIONS = [
 ];
 // ── Badge phạm vi ─────────────────────────────────────────
 const STATUS_BADGE: Record<number, { label: string; emoji: string; className: string }> = {
+  0: { label: "Bị vi phạm", emoji: "⚠️", className: "bg-red-500/10 text-red-400" },
   1: { label: "Công khai", emoji: "🌍", className: "bg-blue-500/10 text-blue-400" },
   2: { label: "Bạn bè", emoji: "👥", className: "bg-green-500/10 text-green-400" },
   3: { label: "Riêng tư", emoji: "🔒", className: "bg-gray-500/10 text-gray-400" },
@@ -42,7 +45,7 @@ const STATUS_BADGE: Record<number, { label: string; emoji: string; className: st
 type ReactionKey = (typeof REACTIONS)[number]["key"] | null;
 type Orientation = "portrait" | "landscape" | "square";
 
-const getOrientation = (url: string ): Promise<Orientation> =>
+const getOrientation = (url: string): Promise<Orientation> =>
   new Promise((resolve) => {
     if (url.match(/\.(mp4|webm|ogg)$/i)) {
       const video = document.createElement("video");
@@ -75,7 +78,7 @@ const Post = ({ post, autoOpenComments = false }: PostProps) => {
   const [orientations, setOrientations] = useState<Orientation[] | null>(null);
   const [showReactionModal, setShowReactionModal] = useState(false);
   const [reactionSummary, setReactionSummary] = useState<any>(null);
-
+  const [isShareOpen, setIsShareOpen] = useState(false);
   const hoverTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
   const currentReaction = REACTIONS.find((r) => r.key === reaction);
   const [commentCount, setCommentCount] = useState(0);
@@ -184,15 +187,13 @@ const Post = ({ post, autoOpenComments = false }: PostProps) => {
         className="w-full h-auto object-contain max-h-[500px]"
       />
     ) : (
+      <PhotoView key={index} src={resolveUrl(url)}>
       <img
-        key={index}
         src={resolveUrl(url)}
         alt={`media-${index}`}
-        className="w-full h-auto object-contain max-h-[500px]"
-        onError={(e) => {
-          (e.currentTarget as HTMLImageElement).style.display = "none";
-        }}
+        className="w-full h-auto object-contain max-h-[500px] cursor-pointer"
       />
+    </PhotoView>
     );
 
   const renderMediaGrid = () => {
@@ -349,7 +350,7 @@ const Post = ({ post, autoOpenComments = false }: PostProps) => {
               {new Date(post.createdAt).toLocaleString("vi-VN")}
             </p>
             {/* ── Badge phạm vi ── */}
-            {post.status && STATUS_BADGE[post.status] && (
+            {typeof post.status === "number" && STATUS_BADGE[post.status] && (
               <span className={`text-[11px] px-2 py-0.5 rounded-full font-medium ${STATUS_BADGE[post.status].className}`}>
                 {STATUS_BADGE[post.status].emoji} {STATUS_BADGE[post.status].label}
               </span>
@@ -365,7 +366,11 @@ const Post = ({ post, autoOpenComments = false }: PostProps) => {
       </div>
 
       {/* MEDIA */}
-      {post.mediaUrls?.length > 0 && <div className="px-4 pb-4">{renderMediaGrid()}</div>}
+      {post.mediaUrls?.length > 0 && (
+  <PhotoProvider>
+    <div className="px-4 pb-4">{renderMediaGrid()}</div>
+  </PhotoProvider>
+)}
 
       {/* REACTION & COMMENT COUNT */}
       {/* REACTION & COMMENT COUNT */}
@@ -428,7 +433,10 @@ const Post = ({ post, autoOpenComments = false }: PostProps) => {
           💬 Bình luận
         </button>
 
-        <button className="flex-1 py-4 text-gray-300 hover:bg-[#3a3b3c]">
+        <button
+          onClick={() => setIsShareOpen(true)} // Mở modal khi bấm
+          className="flex-1 py-4 text-gray-300 hover:bg-[#3a3b3c]"
+        >
           🔗 Chia sẻ
         </button>
         <button onClick={handleReport} className="flex-1 py-4 text-gray-300 hover:bg-[#3a3b3c]">🚩 Báo cáo</button>
@@ -448,10 +456,11 @@ const Post = ({ post, autoOpenComments = false }: PostProps) => {
       {showComments && (
         <div className="border-t border-[#3e4042]">
           <CommentSection
-  postId={Number(post.id)}
-  post={post} // ✅ thêm dòng này
-  onClose={() => setShowComments(false)}
-/>
+            postId={Number(post.id)}
+            authorId={post.userId} // ✅ thêm dòng này
+            post={post} // ✅ thêm dòng này
+            onClose={() => setShowComments(false)}
+          />
         </div>
       )}
 
@@ -462,6 +471,13 @@ const Post = ({ post, autoOpenComments = false }: PostProps) => {
           summary={reactionSummary} // Truyền cái này sang Modal
           onClose={() => setShowReactionModal(false)}
           resolveUrl={resolveUrl}
+        />
+      )}
+      {/* MODAL SHARE */}
+      {isShareOpen && (
+        <ShareModal
+          post={post}
+          onClose={() => setIsShareOpen(false)}
         />
       )}
     </div>

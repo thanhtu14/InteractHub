@@ -14,7 +14,7 @@ interface ReactionModalProps {
   postId: number;
   summary: LikeSummary;
   onClose: () => void;
-  resolveUrl: (path?: string | null) => string;
+  resolveUrl: (path?: string | null) => string | undefined;
 }
 
 const ReactionModal = ({ postId, summary, onClose, resolveUrl }: ReactionModalProps) => {

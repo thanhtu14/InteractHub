@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from "react";
 import { userService } from "../services/userService";
 import { friendshipService } from "../services/friendshipService";
+import { PhotoProvider, PhotoView } from "react-photo-view";
+
 import { type User } from "../schemas/user.schema";
 import { toast } from "react-toastify";
 import { resolveUrl } from "../utils/urlUtils"; // ✅ Tái sử dụng hàm định dạng thời gian chuẩn
@@ -169,22 +171,31 @@ const ProfileHeader: React.FC<ProfileHeaderProps> = ({
         <div className="max-w-[1050px] mx-auto">
           {/* Cover */}
           <div className="relative h-[200px] md:h-[350px] w-full bg-gray-800 rounded-b-xl overflow-hidden">
-            <img
-              src={resolveUrl(user.CoverUrl) || "/images/anh-bia.png"}
-              alt="cover"
-              className="w-full h-full object-cover"
-            />
+            <PhotoProvider>
+              <PhotoView src={resolveUrl(user.CoverUrl) || "/images/anh-bia.png"}>
+                <img
+                  src={resolveUrl(user.CoverUrl) || "/images/anh-bia.png"}
+                  alt="cover"
+                  className="w-full h-full object-cover"
+                />
+              </PhotoView>
+            </PhotoProvider>
           </div>
 
           {/* Avatar + Info */}
           <div className="px-4 md:px-8 pb-4">
             <div className="flex flex-col md:flex-row items-center md:items-end -mt-12 md:-mt-16 gap-4 relative z-20">
               {/* Avatar */}
-              <img
-                src={resolveUrl(user.AvatarUrl) || "/images/default-avatar.png"}
-                alt="avatar"
-                className="w-32 h-32 md:w-40 md:h-40 rounded-full border-4 border-[#242526] bg-black"
-              />
+              <PhotoProvider>
+                <PhotoView src={resolveUrl(user.AvatarUrl) || "/images/default-avatar.png"}>
+                  <img
+                    src={resolveUrl(user.AvatarUrl) || "/images/default-avatar.png"}
+                    alt="avatar"
+                    className="w-32 h-32 md:w-40 md:h-40 rounded-full border-4 border-[#242526] bg-black"
+                  />
+                </PhotoView>
+              </PhotoProvider>
+
 
               {/* Info */}
               <div className="flex-1 text-center md:text-left mb-2">

@@ -1,9 +1,22 @@
-import React, { useState, useRef, useEffect, useMemo, useCallback } from "react";
-import { FaPaperPlane, FaImage, FaTimes, FaPlay } from "react-icons/fa";
+import React, {
+  useState,
+  useRef,
+  useEffect,
+  useMemo,
+  useCallback,
+} from "react";
+import {
+  FaPaperPlane,
+  FaImage,
+  FaTimes,
+  FaPlay,
+  FaMinus,
+} from "react-icons/fa";
 import { messageService, type MessageItem } from "../services/messageService";
 import { resolveUrl } from "../utils/urlUtils";
 import { useAuth } from "../context/useAuth";
 import { signalRService } from "../services/signalRService";
+import PostCard from "./PostCard";
 
 // ── TYPES ─────────────────────────────────────────────────────────
 export interface Conversation {
@@ -74,13 +87,11 @@ const mapToUIMessage = (m: MessageItem): Message => {
       ?.filter((x) => x.mediaType === 1)
       .map((x) => resolveUrl(x.mediaUrl))
       .filter((url): url is string => !!url) ?? [];
-
   const videoUrls =
     m.medias
       ?.filter((x) => x.mediaType === 2)
       .map((x) => resolveUrl(x.mediaUrl))
       .filter((url): url is string => !!url) ?? [];
-
   const rawTime = new Date(m.createdAt);
   return {
     id: String(m.id),
@@ -135,6 +146,43 @@ const DateSeparator: React.FC<{ label: string }> = ({ label }) => (
   </div>
 );
 
+// ── MESSAGE TEXT ──────────────────────────────────────────────────
+const MessageText: React.FC<{ text: string }> = ({ text }) => {
+  const urlRegex = /(https?:\/\/[^\s]+)/g;
+  const parts = text.split(urlRegex);
+  const matches = text.match(urlRegex);
+  const postUrl = matches?.find((url) => url.includes("/post/"));
+  const displayTitle = text
+    .replace("Đã chia sẻ bài viết:", "")
+    .replace(urlRegex, "")
+    .trim();
+  return (
+    <div className="flex flex-col">
+      <div className="whitespace-pre-wrap">
+        {parts.map((part, i) =>
+          urlRegex.test(part) ? (
+            <a
+              key={i}
+              href={part}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="underline text-inherit hover:opacity-80"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {part}
+            </a>
+          ) : (
+            part
+          )
+        )}
+      </div>
+      {postUrl && (
+        <PostCard url={postUrl} title={displayTitle || "Xem bài viết"} />
+      )}
+    </div>
+  );
+};
+
 // ── MESSAGE GROUP UI ──────────────────────────────────────────────
 const MessageGroupUI: React.FC<{
   group: MessageGroup;
@@ -144,12 +192,9 @@ const MessageGroupUI: React.FC<{
   lastReadAvatar?: string;
 }> = ({ group, isMe, senderAvatar, lastReadMessageId, lastReadAvatar }) => {
   const [showTime, setShowTime] = useState(false);
-
   return (
     <div
-      className={`flex gap-2 mb-1 ${
-        isMe ? "flex-row-reverse" : "flex-row"
-      } items-end`}
+      className={`flex gap-2 mb-1 ${isMe ? "flex-row-reverse" : "flex-row"} items-end`}
     >
       {!isMe && (
         <div className="w-8 flex-shrink-0">
@@ -160,17 +205,11 @@ const MessageGroupUI: React.FC<{
           />
         </div>
       )}
-
-      <div
-        className={`flex flex-col gap-1 max-w-[280px] ${
-          isMe ? "items-end" : "items-start"
-        }`}
-      >
+      <div className={`flex flex-col gap-1 max-w-[280px] ${isMe ? "items-end" : "items-start"}`}>
         {group.messages.map((msg, idx) => {
           const isFirst = idx === 0;
           const isLast = idx === group.messages.length - 1;
           const isSeen = isMe && msg.id === lastReadMessageId;
-
           const br = isMe
             ? [
                 "rounded-2xl",
@@ -184,22 +223,12 @@ const MessageGroupUI: React.FC<{
                 !isLast && !isFirst ? "rounded-l-md" : "",
                 isLast && group.messages.length > 1 ? "rounded-bl-2xl" : "",
               ].join(" ");
-
           return (
             <div key={msg.id} className="flex flex-col gap-0.5">
-              <div
-                onClick={() => setShowTime((v) => !v)}
-                className="cursor-pointer"
-              >
+              <div onClick={() => setShowTime((v) => !v)} className="cursor-pointer">
                 {msg.content.text && (
-                  <div
-                    className={`px-4 py-2 text-[15px] leading-snug break-words ${br} ${
-                      isMe
-                        ? "bg-[#1877f2] text-white"
-                        : "bg-[#3a3b3c] text-white"
-                    }`}
-                  >
-                    {msg.content.text}
+                  <div className={`px-4 py-2 text-[15px] leading-snug break-words ${br} ${isMe ? "bg-[#1877f2] text-white" : "bg-[#3a3b3c] text-white"}`}>
+                    <MessageText text={msg.content.text} />
                   </div>
                 )}
                 {(msg.content.imageUrls?.length ?? 0) > 0 && (
@@ -210,10 +239,7 @@ const MessageGroupUI: React.FC<{
                         src={url}
                         className="max-w-[200px] max-h-[200px] rounded-xl object-cover border border-[#3e4042] cursor-zoom-in hover:opacity-90 transition"
                         alt="media"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          window.open(url, "_blank");
-                        }}
+                        onClick={(e) => { e.stopPropagation(); window.open(url, "_blank"); }}
                       />
                     ))}
                   </div>
@@ -221,10 +247,7 @@ const MessageGroupUI: React.FC<{
                 {(msg.content.videoUrls?.length ?? 0) > 0 && (
                   <div className="flex flex-col gap-1 mt-1">
                     {msg.content.videoUrls!.map((url, i) => (
-                      <video
-                        key={i}
-                        src={url}
-                        controls
+                      <video key={i} src={url} controls
                         className="max-w-[220px] rounded-xl border border-[#3e4042]"
                         onClick={(e) => e.stopPropagation()}
                       />
@@ -232,82 +255,83 @@ const MessageGroupUI: React.FC<{
                   </div>
                 )}
               </div>
-
               {showTime && isLast && (
-                <span
-                  className={`text-[11px] text-gray-500 px-1 ${
-                    isMe ? "text-right" : "text-left"
-                  }`}
-                  style={{ animation: "fadeIn 0.15s ease" }}
-                >
+                <span className={`text-[11px] text-gray-500 px-1 ${isMe ? "text-right" : "text-left"}`}
+                  style={{ animation: "fadeIn 0.15s ease" }}>
                   {msg.createdAt}
                 </span>
               )}
-
               {isSeen && lastReadAvatar && (
                 <div className="flex justify-end mt-0.5">
-                  <img
-                    src={lastReadAvatar}
-                    className="w-4 h-4 rounded-full border border-gray-600"
-                    alt="seen"
-                  />
+                  <img src={lastReadAvatar} className="w-4 h-4 rounded-full border border-gray-600" alt="seen" />
                 </div>
               )}
             </div>
           );
         })}
-
-        <span
-          className={`text-[11px] text-gray-500 px-1 ${
-            isMe ? "text-right" : "text-left"
-          }`}
-        >
+        <span className={`text-[11px] text-gray-500 px-1 ${isMe ? "text-right" : "text-left"}`}>
           {group.groupTime}
         </span>
       </div>
-
       {isMe && <div className="w-8 flex-shrink-0" />}
     </div>
   );
 };
 
+// ══════════════════════════════════════════════════════════════════
 // ── CHAT WINDOW ───────────────────────────────────────────────────
+// ══════════════════════════════════════════════════════════════════
 const PAGE_SIZE = 20;
+const DEFAULT_W = 360;
+const DEFAULT_H = 520;
+const MIN_W = 280;
+const MIN_H = 360;
+const MAX_W = 720;
+const MAX_H = 900;
 
 const ChatWindow: React.FC<{
   conversation: Conversation;
   onClose?: () => void;
-}> = ({ conversation, onClose }) => {
+  onMinimize?: () => void; // ← gọi khi bấm nút "−"
+}> = ({ conversation, onClose, onMinimize }) => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputText, setInputText] = useState("");
   const [selectedFiles, setSelectedFiles] = useState<SelectedFile[]>([]);
   const [sending, setSending] = useState(false);
+  const [showScrollBottom, setShowScrollBottom] = useState(false);
 
-  // ── Infinite scroll state ──────────────────────────────────────
+  // ── Size & position ───────────────────────────────────────────
+  const [size, setSize] = useState({ w: DEFAULT_W, h: DEFAULT_H });
+  const [pos, setPos] = useState({
+    x: window.innerWidth - DEFAULT_W - 16,
+    y: window.innerHeight - DEFAULT_H - 16,
+  });
+
+  // ── Infinite scroll ───────────────────────────────────────────
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
+  const prevScrollHeightRef = useRef<number>(0);
+  const shouldScrollBottomRef = useRef(true);
 
   const scrollRef = useRef<HTMLDivElement>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
-  // Lưu scrollHeight trước khi prepend để restore vị trí scroll
-  const prevScrollHeightRef = useRef<number>(0);
-  // Flag: chỉ auto-scroll xuống cuối khi gửi/nhận tin mới
-  const shouldScrollBottomRef = useRef(true);
-
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Drag & resize refs
+  const dragRef = useRef({ dragging: false, startX: 0, startY: 0, origX: 0, origY: 0 });
+  const resizeRef = useRef({ resizing: false, startX: 0, startY: 0, origW: 0, origH: 0, origX: 0, origY: 0, dir: "" });
+
   const { user } = useAuth();
   const currentUserId = user?.Id;
 
-  // ── Load trang đầu ────────────────────────────────────────────
+  // ── Load trang đầu ───────────────────────────────────────────
   useEffect(() => {
     if (!conversation.id) return;
-
     setMessages([]);
     setPage(1);
     setHasMore(false);
     shouldScrollBottomRef.current = true;
-
     messageService
       .getMessages(Number(conversation.id), 1, PAGE_SIZE)
       .then((res) => {
@@ -315,78 +339,60 @@ const ChatWindow: React.FC<{
         setHasMore(res.data.hasMore);
       })
       .catch(console.error);
-
     messageService.markAsRead(Number(conversation.id)).catch(console.error);
   }, [conversation.id]);
 
-  // ── Load thêm tin cũ ──────────────────────────────────────────
+  // ── Load thêm tin cũ ─────────────────────────────────────────
   const loadMore = useCallback(async () => {
     if (loadingMore || !hasMore) return;
-
-    // Ghi lại scrollHeight trước khi prepend
     prevScrollHeightRef.current = scrollRef.current?.scrollHeight ?? 0;
     shouldScrollBottomRef.current = false;
     setLoadingMore(true);
-
     try {
       const nextPage = page + 1;
-      const res = await messageService.getMessages(
-        Number(conversation.id),
-        nextPage,
-        PAGE_SIZE
-      );
-      const older = res.data.messages.map(mapToUIMessage);
-      setMessages((prev) => [...older, ...prev]);
+      const res = await messageService.getMessages(Number(conversation.id), nextPage, PAGE_SIZE);
+      setMessages((prev) => [...res.data.messages.map(mapToUIMessage), ...prev]);
       setHasMore(res.data.hasMore);
       setPage(nextPage);
     } catch (err) {
-      console.error("Load more failed:", err);
+      console.error(err);
     } finally {
       setLoadingMore(false);
     }
   }, [loadingMore, hasMore, page, conversation.id]);
 
-  // ── Restore scroll position sau khi prepend ───────────────────
   useEffect(() => {
     if (shouldScrollBottomRef.current) return;
-    const container = scrollRef.current;
-    if (!container) return;
-    // Bù đúng khoảng scrollHeight tăng thêm do tin mới prepend
-    container.scrollTop += container.scrollHeight - prevScrollHeightRef.current;
+    const c = scrollRef.current;
+    if (!c) return;
+    c.scrollTop += c.scrollHeight - prevScrollHeightRef.current;
   }, [messages]);
 
-  // ── Auto scroll xuống cuối khi gửi/nhận tin mới ───────────────
   useEffect(() => {
     if (!shouldScrollBottomRef.current) return;
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
-  // ── Trigger load more khi cuộn lên gần đầu ────────────────────
   useEffect(() => {
-    const container = scrollRef.current;
-    if (!container) return;
-
-    const handleScroll = () => {
-      if (container.scrollTop <= 60) {
-        loadMore();
-      }
+    const c = scrollRef.current;
+    if (!c) return;
+    const onScroll = () => {
+      if (c.scrollTop <= 60) loadMore();
+      setShowScrollBottom(c.scrollHeight - c.scrollTop - c.clientHeight > 300);
     };
-
-    container.addEventListener("scroll", handleScroll, { passive: true });
-    return () => container.removeEventListener("scroll", handleScroll);
+    c.addEventListener("scroll", onScroll, { passive: true });
+    return () => c.removeEventListener("scroll", onScroll);
   }, [loadMore]);
 
-  // ── Realtime: nhận tin nhắn mới + cập nhật isRead ─────────────
+  // ── Realtime ──────────────────────────────────────────────────
   useEffect(() => {
     signalRService.onReceiveMessage((newMsg) => {
       if (String(newMsg.conversationId) !== String(conversation.id)) return;
-
       shouldScrollBottomRef.current = true;
       setMessages((prev) => {
         if (prev.some((m) => m.id === String(newMsg.id))) return prev;
         return [...prev, mapToUIMessage(newMsg)];
       });
-
       messageService.markAsRead(Number(conversation.id)).catch(console.error);
     }, "chatWindow");
 
@@ -394,9 +400,7 @@ const ChatWindow: React.FC<{
       if (String(conversationId) !== String(conversation.id)) return;
       setMessages((prev) =>
         prev.map((m) =>
-          String(m.senderId) === String(currentUserId)
-            ? { ...m, isRead: true }
-            : m
+          String(m.senderId) === String(currentUserId) ? { ...m, isRead: true } : m
         )
       );
     }, "chatWindow");
@@ -407,23 +411,71 @@ const ChatWindow: React.FC<{
     };
   }, [conversation.id, currentUserId]);
 
-  // ── Revoke object URLs khi unmount ────────────────────────────
   useEffect(() => {
     return () => {
       selectedFiles.forEach(({ previewUrl }) => URL.revokeObjectURL(previewUrl));
     };
   }, []);
 
-  // ── Chọn file ─────────────────────────────────────────────────
+  // ── DRAG ─────────────────────────────────────────────────────
+  const onDragMouseDown = (e: React.MouseEvent) => {
+    e.preventDefault();
+    dragRef.current = { dragging: true, startX: e.clientX, startY: e.clientY, origX: pos.x, origY: pos.y };
+  };
+
+  useEffect(() => {
+    const onMove = (e: MouseEvent) => {
+      if (!dragRef.current.dragging) return;
+      setPos({
+        x: Math.max(0, Math.min(window.innerWidth - size.w, dragRef.current.origX + e.clientX - dragRef.current.startX)),
+        y: Math.max(0, Math.min(window.innerHeight - size.h, dragRef.current.origY + e.clientY - dragRef.current.startY)),
+      });
+    };
+    const onUp = () => { dragRef.current.dragging = false; };
+    window.addEventListener("mousemove", onMove);
+    window.addEventListener("mouseup", onUp);
+    return () => { window.removeEventListener("mousemove", onMove); window.removeEventListener("mouseup", onUp); };
+  }, [size]);
+
+  // ── RESIZE ───────────────────────────────────────────────────
+  const onResizeMouseDown = (e: React.MouseEvent, dir: string) => {
+    e.preventDefault();
+    e.stopPropagation();
+    resizeRef.current = { resizing: true, startX: e.clientX, startY: e.clientY, origW: size.w, origH: size.h, origX: pos.x, origY: pos.y, dir };
+  };
+
+  useEffect(() => {
+    const onMove = (e: MouseEvent) => {
+      const r = resizeRef.current;
+      if (!r.resizing) return;
+      const dx = e.clientX - r.startX;
+      const dy = e.clientY - r.startY;
+      let nW = r.origW, nH = r.origH, nX = r.origX, nY = r.origY;
+      if (r.dir.includes("e")) nW = Math.max(MIN_W, Math.min(MAX_W, r.origW + dx));
+      if (r.dir.includes("s")) nH = Math.max(MIN_H, Math.min(MAX_H, r.origH + dy));
+      if (r.dir.includes("w")) { nW = Math.max(MIN_W, Math.min(MAX_W, r.origW - dx)); nX = r.origX + (r.origW - nW); }
+      if (r.dir.includes("n")) { nH = Math.max(MIN_H, Math.min(MAX_H, r.origH - dy)); nY = r.origY + (r.origH - nH); }
+      setSize({ w: nW, h: nH });
+      setPos({ x: nX, y: nY });
+    };
+    const onUp = () => { resizeRef.current.resizing = false; };
+    window.addEventListener("mousemove", onMove);
+    window.addEventListener("mouseup", onUp);
+    return () => { window.removeEventListener("mousemove", onMove); window.removeEventListener("mouseup", onUp); };
+  }, []);
+
+  // ── File handling ─────────────────────────────────────────────
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
-    if (!files || files.length === 0) return;
-    const newFiles: SelectedFile[] = Array.from(files).map((file) => ({
-      file,
-      previewUrl: URL.createObjectURL(file),
-      isVideo: file.type.startsWith("video/"),
-    }));
-    setSelectedFiles((prev) => [...prev, ...newFiles]);
+    if (!files?.length) return;
+    setSelectedFiles((prev) => [
+      ...prev,
+      ...Array.from(files).map((file) => ({
+        file,
+        previewUrl: URL.createObjectURL(file),
+        isVideo: file.type.startsWith("video/"),
+      })),
+    ]);
     e.target.value = "";
   };
 
@@ -434,110 +486,104 @@ const ChatWindow: React.FC<{
     });
   };
 
-  // ── Gửi tin nhắn ─────────────────────────────────────────────
+  // ── Send ──────────────────────────────────────────────────────
   const handleSend = async () => {
     if ((!inputText.trim() && selectedFiles.length === 0) || sending) return;
     setSending(true);
     shouldScrollBottomRef.current = true;
-
     try {
       if (inputText.trim()) {
-        const res = await messageService.sendMessage(
-          Number(conversation.id),
-          inputText.trim()
-        );
+        const res = await messageService.sendMessage(Number(conversation.id), inputText.trim());
         setMessages((prev) => [...prev, mapToUIMessage(res.data)]);
       }
       for (const { file, previewUrl } of selectedFiles) {
-        const res = await messageService.sendMessage(
-          Number(conversation.id),
-          undefined,
-          file
-        );
+        const res = await messageService.sendMessage(Number(conversation.id), undefined, file);
         URL.revokeObjectURL(previewUrl);
         setMessages((prev) => [...prev, mapToUIMessage(res.data)]);
       }
       setInputText("");
       setSelectedFiles([]);
     } catch (err) {
-      console.error("Gửi tin thất bại:", err);
+      console.error(err);
     } finally {
       setSending(false);
     }
   };
 
   const lastReadMessageId = useMemo(
-    () =>
-      [...messages]
-        .reverse()
-        .find(
-          (m) => String(m.senderId) === String(currentUserId) && m.isRead
-        )?.id,
+    () => [...messages].reverse().find((m) => String(m.senderId) === String(currentUserId) && m.isRead)?.id,
     [messages, currentUserId]
   );
-
   const groups = useMemo(() => groupMessages(messages), [messages]);
-
   const groupsWithSep = useMemo(
-    () =>
-      groups.map((group, i) => ({
-        group,
-        showSep: i === 0 || groups[i - 1].dateLabel !== group.dateLabel,
-      })),
+    () => groups.map((group, i) => ({ group, showSep: i === 0 || groups[i - 1].dateLabel !== group.dateLabel })),
     [groups]
   );
 
   return (
-    <div className="flex flex-col h-full bg-[#18191a]">
+    <div
+      className="fixed z-50 flex flex-col bg-[#18191a] rounded-2xl shadow-2xl border border-[#3e4042] overflow-hidden select-none"
+      style={{ left: pos.x, top: pos.y, width: size.w, height: size.h }}
+    >
+      {/* ── Resize handles ── */}
+      <div onMouseDown={(e) => onResizeMouseDown(e, "n")} className="absolute top-0 left-2 right-2 h-1 cursor-n-resize z-20" />
+      <div onMouseDown={(e) => onResizeMouseDown(e, "s")} className="absolute bottom-0 left-2 right-2 h-1 cursor-s-resize z-20" />
+      <div onMouseDown={(e) => onResizeMouseDown(e, "w")} className="absolute left-0 top-2 bottom-2 w-1 cursor-w-resize z-20" />
+      <div onMouseDown={(e) => onResizeMouseDown(e, "e")} className="absolute right-0 top-2 bottom-2 w-1 cursor-e-resize z-20" />
+      <div onMouseDown={(e) => onResizeMouseDown(e, "nw")} className="absolute top-0 left-0 w-3 h-3 cursor-nw-resize z-20" />
+      <div onMouseDown={(e) => onResizeMouseDown(e, "ne")} className="absolute top-0 right-0 w-3 h-3 cursor-ne-resize z-20" />
+      <div onMouseDown={(e) => onResizeMouseDown(e, "sw")} className="absolute bottom-0 left-0 w-3 h-3 cursor-sw-resize z-20" />
+      <div onMouseDown={(e) => onResizeMouseDown(e, "se")} className="absolute bottom-0 right-0 w-3 h-3 cursor-se-resize z-20" />
+
       {/* ── HEADER ── */}
-      <div className="flex items-center justify-between p-3 border-b border-gray-700 bg-[#242526]">
-        <div className="flex items-center gap-2">
+      <div
+        onMouseDown={onDragMouseDown}
+        className="flex items-center justify-between px-3 py-2 border-b border-gray-700 bg-[#242526] cursor-grab active:cursor-grabbing flex-shrink-0"
+      >
+        <div className="flex items-center gap-2 pointer-events-none">
           <img
-            src={
-              resolveUrl(conversation.avatar) ||
-              "/assets/img/icons8-user-default-64.png"
-            }
-            className="w-10 h-10 rounded-full object-cover"
+            src={resolveUrl(conversation.avatar) || "/assets/img/icons8-user-default-64.png"}
+            className="w-9 h-9 rounded-full object-cover"
             alt=""
-            onError={(e) => {
-              (e.currentTarget as HTMLImageElement).src =
-                "/assets/img/icons8-user-default-64.png";
-            }}
           />
           <div>
-            <p className="text-white font-semibold text-sm leading-tight">
-              {conversation.name}
-            </p>
+            <p className="text-white font-semibold text-sm leading-tight">{conversation.name}</p>
             <p className="text-[11px] text-green-500">Đang hoạt động</p>
           </div>
         </div>
-        {onClose && (
-          <button
-            onClick={onClose}
-            className="text-gray-400 hover:text-white transition p-1"
-          >
-            <FaTimes size={18} />
-          </button>
-        )}
+        <div className="flex items-center gap-1 pointer-events-auto">
+          {/* Nút thu nhỏ → gọi onMinimize lên MainLayout */}
+          {onMinimize && (
+            <button
+              onClick={onMinimize}
+              className="w-7 h-7 flex items-center justify-center rounded-full bg-[#3a3b3c] hover:bg-[#4e4f50] text-gray-300 hover:text-white transition"
+              title="Thu nhỏ"
+            >
+              <FaMinus size={10} />
+            </button>
+          )}
+          {onClose && (
+            <button
+              onClick={onClose}
+              className="w-7 h-7 flex items-center justify-center rounded-full bg-[#3a3b3c] hover:bg-red-500 text-gray-300 hover:text-white transition"
+              title="Đóng"
+            >
+              <FaTimes size={10} />
+            </button>
+          )}
+        </div>
       </div>
 
       {/* ── MESSAGES ── */}
-      <div ref={scrollRef} className="flex-1 overflow-y-auto p-3 no-scrollbar">
-
-        {/* Spinner load more */}
+      <div ref={scrollRef} className="flex-1 overflow-y-auto p-3 no-scrollbar relative">
         {loadingMore && (
           <div className="flex justify-center py-3">
             <div className="w-5 h-5 rounded-full border-2 border-[#1877f2] border-t-transparent animate-spin" />
           </div>
         )}
-
-        {/* Đã hết lịch sử */}
         {!hasMore && messages.length > 0 && !loadingMore && (
-          <p className="text-center text-gray-600 text-[11px] py-2 select-none">
-            Đây là tin nhắn đầu tiên
-          </p>
+          <p className="text-center text-gray-600 text-[11px] py-2 select-none">Đây là tin nhắn đầu tiên</p>
         )}
-
         {groupsWithSep.map(({ group, showSep }, i) => (
           <React.Fragment key={i}>
             {showSep && <DateSeparator label={group.dateLabel} />}
@@ -551,38 +597,37 @@ const ChatWindow: React.FC<{
           </React.Fragment>
         ))}
         <div ref={bottomRef} />
+        {showScrollBottom && (
+          <button
+            onClick={() => { shouldScrollBottomRef.current = true; bottomRef.current?.scrollIntoView({ behavior: "smooth" }); }}
+            className="sticky bottom-2 left-1/2 -translate-x-1/2 w-8 h-8 bg-[#242526] border border-[#3e4042]
+                       rounded-full flex items-center justify-center text-[#1877f2] shadow-lg hover:bg-[#3a3b3c] transition-all"
+          >
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M7 10l5 5 5-5z" /></svg>
+          </button>
+        )}
       </div>
 
       {/* ── FILE PREVIEW ── */}
       {selectedFiles.length > 0 && (
         <div className="flex gap-2 p-2 bg-[#242526] border-t border-[#3e4042] overflow-x-auto no-scrollbar">
           {selectedFiles.map(({ previewUrl, isVideo }, index) => (
-            <div
-              key={index}
-              className="relative w-16 h-16 flex-shrink-0 group"
-            >
+            <div key={index} className="relative w-14 h-14 flex-shrink-0 group">
               {isVideo ? (
                 <div className="relative w-full h-full">
-                  <video
-                    src={previewUrl}
-                    className="w-full h-full object-cover rounded-lg border border-gray-600"
-                  />
+                  <video src={previewUrl} className="w-full h-full object-cover rounded-lg border border-gray-600" />
                   <div className="absolute inset-0 flex items-center justify-center bg-black/30 rounded-lg">
-                    <FaPlay size={14} className="text-white" />
+                    <FaPlay size={12} className="text-white" />
                   </div>
                 </div>
               ) : (
-                <img
-                  src={previewUrl}
-                  className="w-full h-full object-cover rounded-lg border border-gray-600"
-                  alt="preview"
-                />
+                <img src={previewUrl} className="w-full h-full object-cover rounded-lg border border-gray-600" alt="preview" />
               )}
               <button
                 onClick={() => removeFile(index)}
-                className="absolute -top-1 -right-1 bg-red-500 text-white rounded-full p-1 shadow-lg hover:bg-red-600 transition opacity-0 group-hover:opacity-100"
+                className="absolute -top-1 -right-1 bg-red-500 text-white rounded-full p-0.5 shadow hover:bg-red-600 transition opacity-0 group-hover:opacity-100"
               >
-                <FaTimes size={8} />
+                <FaTimes size={7} />
               </button>
             </div>
           ))}
@@ -590,54 +635,29 @@ const ChatWindow: React.FC<{
       )}
 
       {/* ── INPUT ── */}
-      <div className="px-3 py-3 border-t border-[#3e4042] bg-[#242526] flex-shrink-0">
+      <div className="px-3 py-2 border-t border-[#3e4042] bg-[#242526] flex-shrink-0">
         <div className="flex items-center gap-2">
-          <input
-            type="file"
-            ref={fileInputRef}
-            className="hidden"
-            multiple
-            accept="image/*,video/*"
-            onChange={handleFileChange}
-          />
-          <button
-            onClick={() => fileInputRef.current?.click()}
-            className="text-gray-400 hover:text-blue-400 transition flex-shrink-0"
-            title="Gửi ảnh / video"
-          >
-            <FaImage size={20} />
+          <input type="file" ref={fileInputRef} className="hidden" multiple accept="image/*,video/*" onChange={handleFileChange} />
+          <button onClick={() => fileInputRef.current?.click()} className="text-gray-400 hover:text-blue-400 transition flex-shrink-0">
+            <FaImage size={18} />
           </button>
           <textarea
             value={inputText}
             onChange={(e) => setInputText(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === "Enter" && !e.shiftKey) {
-                e.preventDefault();
-                handleSend();
-              }
-            }}
+            onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleSend(); } }}
             placeholder="Aa"
             rows={1}
-            className="flex-1 bg-[#3a3b3c] text-white rounded-2xl px-4 py-2 resize-none outline-none max-h-[120px] text-sm"
+            className="flex-1 bg-[#3a3b3c] text-white rounded-2xl px-4 py-2 resize-none outline-none max-h-[100px] text-sm"
           />
           <button
             onClick={handleSend}
-            disabled={
-              (!inputText.trim() && selectedFiles.length === 0) || sending
-            }
+            disabled={(!inputText.trim() && selectedFiles.length === 0) || sending}
             className="flex-shrink-0 w-8 h-8 flex items-center justify-center"
           >
             {sending ? (
               <div className="w-5 h-5 rounded-full border-2 border-[#1877f2] border-t-transparent animate-spin" />
             ) : (
-              <FaPaperPlane
-                size={20}
-                className={
-                  inputText.trim() || selectedFiles.length > 0
-                    ? "text-blue-500"
-                    : "text-gray-600"
-                }
-              />
+              <FaPaperPlane size={18} className={inputText.trim() || selectedFiles.length > 0 ? "text-blue-500" : "text-gray-600"} />
             )}
           </button>
         </div>

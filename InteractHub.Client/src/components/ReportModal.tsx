@@ -44,6 +44,7 @@ const ReportModal: React.FC<ReportModalProps> = ({ postId, onClose }) => {
         onClose();
       } else {
         toast.error(res.data.Message);
+        onClose();
       }
     } catch (err) {
       if (err instanceof AxiosError) {

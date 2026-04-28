@@ -6,11 +6,12 @@ import { resolveUrl } from "../utils/urlUtils";
 
 interface CommentSectionProps {
   postId: number;
+  authorId: string | undefined; // ✅ thêm prop authorId
   post: any;
   onClose: () => void;
 }
 
-const CommentSection: React.FC<CommentSectionProps> = ({ postId, post, onClose }) => {
+const CommentSection: React.FC<CommentSectionProps> = ({ postId, authorId, post, onClose }) => {
   const [comments, setComments] = useState<CommentResponse[]>([]);
   const [newComment, setNewComment] = useState("");
   const [loading, setLoading] = useState(false);

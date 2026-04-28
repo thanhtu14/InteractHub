@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import Friend from "./Friends";
 import { friendshipService } from "../services/friendshipService";
 import {removeVietnameseTones} from "../utils/stringUtils"; // ✅ Tái sử dụng hàm chuẩn hóa chuỗi cho tìm kiếm
+import { useAuth } from "../context/useAuth"; // ✅ Import hook useAuth của bạn
 
 interface FriendResponseDto {
   Id: string;
@@ -23,21 +24,22 @@ const mapFriend = (item: FriendResponseDto): FriendType => ({
 
 
 
-interface FriendListProps {
-  userId: string; // ← nhận userId từ ngoài vào
-}
 
-const FriendList = ({ userId }: FriendListProps) => {
+
+const FriendList = () => {
+  const { user, isLoading: authLoading } = useAuth(); // ✅ Lấy user từ context
   const [friends, setFriends] = useState<FriendType[]>([]);
   const [loading, setLoading] = useState(true);
   const [keyword, setKeyword] = useState("");
 
   useEffect(() => {
-    if (!userId) return;
+    // Nếu Auth đang load hoặc không có user thì không fetch bạn bè
+    if (authLoading || !user?.Id) return;
+
     const fetchFriends = async () => {
       try {
         setLoading(true);
-        const res = await friendshipService.getFriendsList(userId);
+        const res = await friendshipService.getFriendsList(user.Id);
         setFriends((res.data as FriendResponseDto[]).map(mapFriend));
       } catch (error) {
         console.error("Lỗi khi tải danh sách bạn bè:", error);
@@ -45,13 +47,20 @@ const FriendList = ({ userId }: FriendListProps) => {
         setLoading(false);
       }
     };
+
     fetchFriends();
-  }, [userId]);
+  }, [user?.Id, authLoading]); // Chạy lại khi userId thay đổi hoặc khi auth xong
 
   const filteredFriends = friends.filter((f) =>
-    removeVietnameseTones(f.fullName).includes(removeVietnameseTones(keyword))
+    removeVietnameseTones(f.fullName.toLowerCase()).includes(
+      removeVietnameseTones(keyword.toLowerCase())
+    )
   );
 
+  // Nếu chưa đăng nhập, có thể ẩn danh sách hoặc thông báo
+  if (!user && !authLoading) {
+    return <div className="p-4 text-gray-500 text-sm">Vui lòng đăng nhập</div>;
+  }
   return (
     <div className="flex flex-col h-full bg-[#18191a] text-white">
       <div className="p-4 sticky top-0 bg-[#18191a] z-10">
