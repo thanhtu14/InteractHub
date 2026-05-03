@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
 import { useAuth } from "../context/useAuth";
+import { toast } from "react-toastify";
 
 import {
   friendshipService,
@@ -102,7 +103,8 @@ const ShareModal = ({
         status: privacy,
       });
 
-      alert("✅ Đã chia sẻ bài viết!");
+      toast.success("Đã share bài viết thành công!");
+
 
       onShared?.();
 
@@ -110,7 +112,8 @@ const ShareModal = ({
     } catch (error) {
       console.error(error);
 
-      alert("❌ Không thể chia sẻ bài viết!");
+      toast.error("Đã có lỗi khi share bài viết!");
+
     } finally {
       setSharing(false);
     }
@@ -132,7 +135,8 @@ const ShareModal = ({
     } catch (error) {
       console.error(error);
 
-      alert("Không thể sao chép liên kết!");
+      toast.success("Không thể sao chép liên kết!");
+
     }
   };
 
@@ -156,7 +160,8 @@ const ShareModal = ({
     } catch (error) {
       console.error(error);
 
-      alert("Không thể gửi tin nhắn!");
+      toast.error("Không thể gửi tin nhắn!");
+      ;
     } finally {
       setSendingIds((prev) =>
         prev.filter((id) => id !== friendId)

@@ -567,7 +567,7 @@ const PostModal: React.FC<PostModalProps> = ({ user, onClose, onPostCreated }) =
       onPostCreated?.(); 
       onClose();
     } catch (error: any) {
-      alert(error.response?.data?.message || "Có lỗi xảy ra khi đăng bài");
+        toast.error("Có lỗi xảy ra khi đăng bài viết!");
     } finally {
       setIsLoading(false);
     }
