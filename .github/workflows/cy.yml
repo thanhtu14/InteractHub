@@ -43,14 +43,14 @@ jobs:
     - name: 📤 Publish app
       run: dotnet publish InteractHub.API/InteractHub.API.csproj -c Release -o ./backend_publish
 
-    # 👉 CHỈ DEPLOY KHI PUSH VÀO MASTER
-    - name: ☁️ Deploy Backend to Azure
-      if: github.ref == 'refs/heads/master'
-      uses: azure/webapps-deploy@v2
-      with:
-        app-name: 'interacthub-api'
-        publish-profile: ${{ secrets.AZURE_BACKEND_PUBLISH_PROFILE }}
-        package: ./backend_publish
+    # # 👉 CHỈ DEPLOY KHI PUSH VÀO MASTER
+    # - name: ☁️ Deploy Backend to Azure
+    #   if: github.ref == 'refs/heads/master'
+    #   uses: azure/webapps-deploy@v2
+    #   with:
+    #     app-name: 'interacthub-api'
+    #     publish-profile: ${{ secrets.AZURE_BACKEND_PUBLISH_PROFILE }}
+    #     package: ./backend_publish
 
 
 # ================= FRONTEND =================
