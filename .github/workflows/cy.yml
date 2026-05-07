@@ -10,7 +10,7 @@ jobs:
 
 # ================= BACKEND =================
   backend:
-    name: 🔧 Build, Test & Deploy Backend (.NET)
+    name: 🔧 Build, Test Backend (.NET)
     runs-on: ubuntu-latest
 
     steps:
@@ -55,7 +55,7 @@ jobs:
 
 # ================= FRONTEND =================
   frontend:
-    name: 🌐 Build & Deploy Frontend (React)
+    name: 🌐 Build Frontend (React)
     runs-on: ubuntu-latest
     needs: backend
 
