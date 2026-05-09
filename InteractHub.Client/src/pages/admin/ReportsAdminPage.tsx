@@ -595,7 +595,7 @@ const ReportsAdminPage: React.FC = () => {
                     </div>
                 </div>
             </div>
-
+  
             {selectedPost && (
                 <PostDetail
                     post={selectedPost}
