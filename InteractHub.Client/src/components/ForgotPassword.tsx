@@ -74,7 +74,7 @@ const ForgotPassword = ({ onBackToLogin }: { onBackToLogin: () => void }) => {
     });
   };
 
-  const mockResetPassword = async (password: string): Promise<boolean> => {
+  const mockResetPassword = async (_password: string): Promise<boolean> => {
     console.log(`[MOCK API] Đang cập nhật mật khẩu mới...`);
     return new Promise((resolve) => {
       setTimeout(() => {
