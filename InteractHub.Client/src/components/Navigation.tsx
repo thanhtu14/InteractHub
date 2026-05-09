@@ -495,22 +495,22 @@ const Navbar: React.FC<NavbarProps> = ({ user: propUser, onChatClick, onNotifyCl
 
 
 
-const NavIcon = ({
-  icon,
-  to,
-  onClick,
-}: {
-  icon: React.ReactNode;
-  to?: string;
-  onClick?: () => void;
-}) => {
-  const content = (
-    <div className="p-2.5 md:p-3 hover:bg-card rounded-xl cursor-pointer text-gray-400 hover:text-[#1877f2] transition-all text-3xl md:text-3xl">
-      {icon}
-    </div>
-  );
-  if (to) return <Link to={to}>{content}</Link>;
-  return <div onClick={onClick}>{content}</div>;
-};
+// const NavIcon = ({
+//   icon,
+//   to,
+//   onClick,
+// }: {
+//   icon: React.ReactNode;
+//   to?: string;
+//   onClick?: () => void;
+// }) => {
+//   const content = (
+//     <div className="p-2.5 md:p-3 hover:bg-card rounded-xl cursor-pointer text-gray-400 hover:text-[#1877f2] transition-all text-3xl md:text-3xl">
+//       {icon}
+//     </div>
+//   );
+//   if (to) return <Link to={to}>{content}</Link>;
+//   return <div onClick={onClick}>{content}</div>;
+// };
 
 export default Navbar;

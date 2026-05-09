@@ -6,7 +6,7 @@ import LoginForm from "../components/FormLogin";
 import FormRegister from "../components/FormRegister";
 import ForgotPassword from "../components/ForgotPassword"; // Import component mới
 import { useAuth } from "../context/useAuth";
-import { loginAPI, registerAPI , registerAdmin} from "../services/authService";
+import { loginAPI, registerAPI} from "../services/authService";
 
 import type { LoginFormData } from "../schemas/auth.schema";
 import type { RegisterFormData } from "../schemas/auth.schema";

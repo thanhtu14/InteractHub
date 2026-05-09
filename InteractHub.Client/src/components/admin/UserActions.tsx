@@ -1,5 +1,5 @@
 import React from 'react';
-import { Eye, Mail, Ban, UserX } from 'lucide-react';
+import { Eye, Ban, UserX } from 'lucide-react';
 
 interface UserActions {
     userId: string;

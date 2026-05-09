@@ -1,5 +1,5 @@
 import React from 'react';
-import { EyeOff, CheckCircle, Trash2, X } from 'lucide-react';
+import {  CheckCircle, X } from 'lucide-react';
 
 interface ReportActions {
     report: any;
@@ -11,7 +11,7 @@ interface ReportActions {
 const ReportActions: React.FC<ReportActions> = ({
     report,
     onInvestigate,
-    onResolve,
+    // onResolve,
     onReject,
 }) => {
     if (report.status === 'pending') {

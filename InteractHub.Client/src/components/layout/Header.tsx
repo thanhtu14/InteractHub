@@ -1,12 +1,12 @@
 import { UserPlus, LogOut } from "lucide-react";
-import { useLocation, useNavigate } from "react-router-dom";
+import { useLocation } from "react-router-dom";
 import React, { useEffect, useState } from "react";
 import RegisterModal from "../admin/RegisterModal";
 
 const Header: React.FC = () => {
     const location = useLocation();
     const [user, setUser] = useState<any>(null);
-    const navigate = useNavigate();
+    // const navigate = useNavigate();
     const [openRegister, setOpenRegister] = useState(false);
 
     const BASE_URL = "https://localhost:7069";

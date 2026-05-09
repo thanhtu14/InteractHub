@@ -450,7 +450,7 @@ const ReportsAdminPage: React.FC = () => {
     const [filterStatus, setFilterStatus] = useState('all');
     const [filterType, setFilterType] = useState('all');
     const [reports, setReports] = useState<Report[]>([]);
-    const [loading, setLoading] = useState(false);
+    // const [loading, setLoading] = useState(false);
     const [openModal, setOpenModal] = useState(false);
     const [mode, setMode] = useState<'resolve' | 'reject' | null>(null);
     const [selectedReport, setSelectedReport] = useState<Report | null>(null);
@@ -459,7 +459,7 @@ const ReportsAdminPage: React.FC = () => {
     useEffect(() => {
         const fetchReports = async () => {
             try {
-                setLoading(true);
+                // setLoading(true);
                 const data = await postService.getAllPostReportsAdmin();
 
                 const normalizeType = (type: string) => {
@@ -500,7 +500,7 @@ const ReportsAdminPage: React.FC = () => {
             } catch (err) {
                 console.error("Lỗi load report:", err);
             } finally {
-                setLoading(false);
+                // setLoading(false);
             }
         };
 

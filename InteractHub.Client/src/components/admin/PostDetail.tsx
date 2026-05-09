@@ -272,34 +272,44 @@ const CommentItem = ({
 // ─── PostDetail ───────────────────────────────────────────────────────────────
 
 const PostDetail: React.FC<PostDetailProps> = ({ post, onClose }) => {
+
     console.log("comments:", post.comments);
     const mediaUrls = post.mediaUrls ?? [];
-    const [likedUsers, setLikedUsers] = useState(post.likes);
+    const [likedUsers] = useState(post.likes);
     const [showComments, setShowComments] = useState(false);
-    const [isLiked, setIsLiked] = useState(false);
     const [openLikes, setOpenLikes] = useState(false);
     const [comments, setComments] = useState<CommentDTO[]>(post.comments ?? []);
 
-    const currentUser = { UserId: "0", UserName: "Bạn", Avatar: "", Type: "like" };
 
-    const handleLike = () => {
-        if (isLiked) {
-            setLikedUsers(likedUsers.filter(u => u.UserId !== currentUser.UserId));
-        } else {
-            setLikedUsers([...likedUsers, currentUser]);
-        }
-        setIsLiked(!isLiked);
-    };
 
-    // load lại comment khi thay đổi comment cha thì cập nhật và hiện sự thay đổi của comment con 
-    const loadComments = async () => {
-        try {
-            const data = await commentService.getByPost(Number(post.id)); // cần đổi endpoind mới để đọc tất cả status của toàn bộ comment của bài post
-            setComments(data);
-        } catch (err) {
-            console.error("Load comment lỗi:", err);
-        }
-    };
+    // console.log("comments:", post.comments);
+    // const mediaUrls = post.mediaUrls ?? [];
+    // const [likedUsers, setLikedUsers] = useState(post.likes);
+    // const [showComments, setShowComments] = useState(false);
+    // const [isLiked, setIsLiked] = useState(false);
+    // const [openLikes, setOpenLikes] = useState(false);
+    // const [comments, setComments] = useState<CommentDTO[]>(post.comments ?? []);
+
+    // const currentUser = { UserId: "0", UserName: "Bạn", Avatar: "", Type: "like" };
+
+    // const handleLike = () => {
+    //     if (isLiked) {
+    //         setLikedUsers(likedUsers.filter(u => u.UserId !== currentUser.UserId));
+    //     } else {
+    //         setLikedUsers([...likedUsers, currentUser]);
+    //     }
+    //     setIsLiked(!isLiked);
+    // };
+
+    // // load lại comment khi thay đổi comment cha thì cập nhật và hiện sự thay đổi của comment con 
+    // const loadComments = async () => {
+    //     try {
+    //         const data = await commentService.getByPost(Number(post.id)); // cần đổi endpoind mới để đọc tất cả status của toàn bộ comment của bài post
+    //         setComments(data);
+    //     } catch (err) {
+    //         console.error("Load comment lỗi:", err);
+    //     }
+    // };
 
     // cập nhât status comment cho giao diện dùng api gọi load lại dữ liệu 
     // const updateCommentStatus = (

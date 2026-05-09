@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import  { useState, useEffect } from "react";
 import { likeService, type LikeSummary, type LikeUserDetails } from "../services/likeService";
 
 const REACTIONS = [

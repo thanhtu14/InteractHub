@@ -1,5 +1,5 @@
 import React from 'react';
-import { Eye, Heart, MessageSquare, Flag } from 'lucide-react';
+import { Heart, MessageSquare } from 'lucide-react';
 import StatusBadge from './StatusBadge';
 import PostActions from './PostActions';
 

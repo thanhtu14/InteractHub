@@ -1,5 +1,5 @@
 import React from 'react';
-import { Eye, EyeOff, CheckCircle, Trash2, RotateCcw } from 'lucide-react';
+import { Eye, EyeOff, Trash2, RotateCcw } from 'lucide-react';
 
 interface Post {
     id: string;
