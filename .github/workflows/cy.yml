@@ -10,7 +10,7 @@ jobs:
 
 # ================= BACKEND =================
   backend:
-    name: 🔧 Build, Test & Deploy Backend (.NET)
+    name: 🔧 Build, Test Backend (.NET)
     runs-on: ubuntu-latest
 
     steps:
@@ -43,19 +43,19 @@ jobs:
     - name: 📤 Publish app
       run: dotnet publish InteractHub.API/InteractHub.API.csproj -c Release -o ./backend_publish
 
-    # 👉 CHỈ DEPLOY KHI PUSH VÀO MASTER
-    - name: ☁️ Deploy Backend to Azure
-      if: github.ref == 'refs/heads/master'
-      uses: azure/webapps-deploy@v2
-      with:
-        app-name: 'interacthub-api'
-        publish-profile: ${{ secrets.AZURE_BACKEND_PUBLISH_PROFILE }}
-        package: ./backend_publish
+    # # 👉 CHỈ DEPLOY KHI PUSH VÀO MASTER
+    # - name: ☁️ Deploy Backend to Azure
+    #   if: github.ref == 'refs/heads/master'
+    #   uses: azure/webapps-deploy@v2
+    #   with:
+    #     app-name: 'interacthub-api'
+    #     publish-profile: ${{ secrets.AZURE_BACKEND_PUBLISH_PROFILE }}
+    #     package: ./backend_publish
 
 
 # ================= FRONTEND =================
   frontend:
-    name: 🌐 Build & Deploy Frontend (React)
+    name: 🌐 Build Frontend (React)
     runs-on: ubuntu-latest
     needs: backend
 
@@ -87,12 +87,12 @@ jobs:
         cd InteractHub.Client
         npm run build
 
-    # 👉 CHỈ DEPLOY KHI PUSH MASTER
-    - name: ☁️ Deploy Frontend to Azure Static Web App
-      if: github.ref == 'refs/heads/master'
-      uses: azure/static-web-apps-deploy@v1
-      with:
-        azure_static_web_apps_api_token: ${{ secrets.AZURE_FRONTEND_TOKEN }}
-        action: "upload"
-        app_location: "InteractHub.Client"
-        output_location: "dist"
+    # # 👉 CHỈ DEPLOY KHI PUSH MASTER
+    # - name: ☁️ Deploy Frontend to Azure Static Web App
+    #   if: github.ref == 'refs/heads/master'
+    #   uses: azure/static-web-apps-deploy@v1
+    #   with:
+    #     azure_static_web_apps_api_token: ${{ secrets.AZURE_FRONTEND_TOKEN }}
+    #     action: "upload"
+    #     app_location: "InteractHub.Client"
+    #     output_location: "dist"
