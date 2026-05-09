@@ -137,7 +137,7 @@ public class StoryServiceIntegrationTests
         // Assert
         result.IsSuccess.Should().BeFalse();
 
-        result.Message.Should().Be("Story không tồn tại.");
+        result.Error.Should().Be("Story không tồn tại.");
     }
 
     // =========================================================
@@ -194,7 +194,7 @@ public class StoryServiceIntegrationTests
         // Assert
         result.IsSuccess.Should().BeFalse();
 
-        result.Message.Should().Be("Story không tồn tại.");
+        result.Error.Should().Be("Story không tồn tại.");
     }
 
     // =========================================================
@@ -237,6 +237,6 @@ public class StoryServiceIntegrationTests
         // Assert
         result.IsSuccess.Should().BeFalse();
 
-        result.Message.Should().Be("Story không tồn tại.");
+        result.Error.Should().Be("Story không tồn tại.");
     }
 }
