@@ -38,7 +38,8 @@ jobs:
       run: dotnet build --no-restore --configuration Release
 
     - name: 🧪 Run unit tests
-      run: dotnet test --no-build --verbosity normal
+      run: dotnet test --configuration Release --verbosity normal
+
 
     - name: 📤 Publish app
       run: dotnet publish InteractHub.API/InteractHub.API.csproj -c Release -o ./backend_publish
