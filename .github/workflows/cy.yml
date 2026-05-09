@@ -29,7 +29,7 @@ jobs:
     - name: ⚙️ Setup .NET
       uses: actions/setup-dotnet@v4
       with:
-        dotnet-version: '8.0.x'
+        dotnet-version: '9.0.x'
 
     - name: 📦 Restore dependencies
       run: dotnet restore
@@ -39,6 +39,7 @@ jobs:
 
     - name: 🧪 Run unit tests
       run: dotnet test --configuration Release --verbosity normal
+      
 
 
     - name: 📤 Publish app
