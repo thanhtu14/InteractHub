@@ -136,7 +136,7 @@ public class StoryServiceTests
 
         // Assert
         Assert.True(result.IsSuccess);
-        Assert.Equal("Đăng tin thành công.", result.Error);
+        Assert.Equal("Đăng tin thành công.", result.Message);
         Assert.NotNull(result.Data);
         Assert.Equal("New Story", result.Data.Content);
     }
@@ -171,7 +171,7 @@ public class StoryServiceTests
 
         // Assert
         Assert.True(result.IsSuccess);
-        Assert.Equal("Cập nhật tin thành công.", result.Error);
+        Assert.Equal("Cập nhật tin thành công.", result.Message);
 
         Assert.Equal("Updated content", story.Content);
         Assert.Equal("/new.jpg", story.MediaUrl);
@@ -219,7 +219,7 @@ public class StoryServiceTests
 
         // Assert
         Assert.True(result.IsSuccess);
-        Assert.Equal("Đã xóa tin thành công.", result.Error);
+        Assert.Equal("Đã xóa tin thành công.", result.Message);
     }
 
     // =========================================================
