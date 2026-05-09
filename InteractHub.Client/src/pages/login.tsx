@@ -34,7 +34,7 @@ const LoginPage = () => {
       login(user, token);
 
       // 🔥 normalize roles (tránh lỗi roles vs Roles)
-      const roles = user.Roles || user.roles || [];
+      const roles = user.Roles || [];
 
       const isAdmin = roles.some(
         (r: string) => r.toLowerCase() === "admin"
