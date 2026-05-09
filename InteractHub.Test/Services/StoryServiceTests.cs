@@ -49,7 +49,8 @@ public class StoryServiceTests
         var result = await _service.GetAllAsync();
 
         // Assert
-        Assert.True(result.Success);
+        Assert.True(result.IsSuccess);
+        Assert.NotNull(result.Data);
         Assert.Equal(2, result.Data.Count);
     }
 
@@ -76,8 +77,10 @@ public class StoryServiceTests
         var result = await _service.GetByIdAsync(1);
 
         // Assert
-        Assert.True(result.Success);
+        Assert.True(result.IsSuccess);
+        Assert.NotNull(result.Data);
         Assert.Equal("Test story", result.Data.Content);
+
     }
 
     // =========================================================
@@ -96,7 +99,7 @@ public class StoryServiceTests
         var result = await _service.GetByIdAsync(999);
 
         // Assert
-        Assert.False(result.Success);
+        Assert.False(result.IsSuccess);
         Assert.Equal("Story không tồn tại.", result.Message);
     }
 
@@ -132,8 +135,9 @@ public class StoryServiceTests
         var result = await _service.CreateAsync(dto, "user1");
 
         // Assert
-        Assert.True(result.Success);
+        Assert.True(result.IsSuccess);
         Assert.Equal("Đăng tin thành công.", result.Message);
+        Assert.NotNull(result.Data);
         Assert.Equal("New Story", result.Data.Content);
     }
 
@@ -166,7 +170,7 @@ public class StoryServiceTests
         var result = await _service.UpdateAsync(1, dto);
 
         // Assert
-        Assert.True(result.Success);
+        Assert.True(result.IsSuccess);
         Assert.Equal("Cập nhật tin thành công.", result.Message);
 
         Assert.Equal("Updated content", story.Content);
@@ -194,7 +198,7 @@ public class StoryServiceTests
         var result = await _service.UpdateAsync(999, dto);
 
         // Assert
-        Assert.False(result.Success);
+        Assert.False(result.IsSuccess);
         Assert.Equal("Story không tồn tại.", result.Message);
     }
 
@@ -214,7 +218,7 @@ public class StoryServiceTests
         var result = await _service.DeleteAsync(1);
 
         // Assert
-        Assert.True(result.Success);
+        Assert.True(result.IsSuccess);
         Assert.Equal("Đã xóa tin thành công.", result.Message);
     }
 
@@ -234,7 +238,7 @@ public class StoryServiceTests
         var result = await _service.DeleteAsync(999);
 
         // Assert
-        Assert.False(result.Success);
+        Assert.False(result.IsSuccess);
         Assert.Equal("Story không tồn tại.", result.Message);
     }
 }

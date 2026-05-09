@@ -46,7 +46,7 @@ public class StoryServiceIntegrationTests
         var result = await _service.CreateAsync(dto, userId);
 
         // Assert
-        result.Success.Should().BeTrue();
+        result.IsSuccess.Should().BeTrue();
 
         var storyInDb = await _context.Stories.FirstOrDefaultAsync();
 
@@ -55,8 +55,10 @@ public class StoryServiceIntegrationTests
         storyInDb!.Content.Should().Be(dto.Content);
         storyInDb.MediaUrl.Should().Be(dto.MediaUrl);
         storyInDb.UserId.Should().Be(userId);
+        storyInDb.CreatedAt.Should().NotBeNull();
+        storyInDb.ExpiredAt.Should().NotBeNull();
+        storyInDb!.ExpiredAt!.Value.Should().BeAfter(storyInDb.CreatedAt!.Value);
 
-        storyInDb.ExpiredAt.Should().BeAfter(storyInDb.CreatedAt);
     }
 
     // =========================================================
@@ -90,7 +92,7 @@ public class StoryServiceIntegrationTests
         var result = await _service.GetAllAsync();
 
         // Assert
-        result.Success.Should().BeTrue();
+        result.IsSuccess.Should().BeTrue();
 
         result.Data.Should().HaveCount(2);
     }
@@ -119,7 +121,7 @@ public class StoryServiceIntegrationTests
         var result = await _service.GetByIdAsync(story.Id);
 
         // Assert
-        result.Success.Should().BeTrue();
+        result.IsSuccess.Should().BeTrue();
 
         result.Data.Should().NotBeNull();
 
@@ -133,7 +135,7 @@ public class StoryServiceIntegrationTests
         var result = await _service.GetByIdAsync(999);
 
         // Assert
-        result.Success.Should().BeFalse();
+        result.IsSuccess.Should().BeFalse();
 
         result.Message.Should().Be("Story không tồn tại.");
     }
@@ -169,7 +171,7 @@ public class StoryServiceIntegrationTests
         var result = await _service.UpdateAsync(story.Id, dto);
 
         // Assert
-        result.Success.Should().BeTrue();
+        result.IsSuccess.Should().BeTrue();
 
         var updatedStory = await _context.Stories.FindAsync(story.Id);
 
@@ -190,7 +192,7 @@ public class StoryServiceIntegrationTests
         var result = await _service.UpdateAsync(999, dto);
 
         // Assert
-        result.Success.Should().BeFalse();
+        result.IsSuccess.Should().BeFalse();
 
         result.Message.Should().Be("Story không tồn tại.");
     }
@@ -219,7 +221,7 @@ public class StoryServiceIntegrationTests
         var result = await _service.DeleteAsync(story.Id);
 
         // Assert
-        result.Success.Should().BeTrue();
+        result.IsSuccess.Should().BeTrue();
 
         var deletedStory = await _context.Stories.FindAsync(story.Id);
 
@@ -233,7 +235,7 @@ public class StoryServiceIntegrationTests
         var result = await _service.DeleteAsync(999);
 
         // Assert
-        result.Success.Should().BeFalse();
+        result.IsSuccess.Should().BeFalse();
 
         result.Message.Should().Be("Story không tồn tại.");
     }
