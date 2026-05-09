@@ -226,7 +226,7 @@ const renderContent = (text: string) => {
       <div className="px-4 pb-4">
         <div
           onClick={() => navigate(`/post/${shared.id}`)}
-          className="border border-border rounded-2xl overflow-hidden bg-card hover:bg-[#2b2d31] transition-all cursor-pointer"
+          className="border border-border rounded-2xl overflow-hidden bg-card transition-all cursor-pointer"
         >
           {/* Header */}
           <div className="flex items-center gap-3 px-4 pt-4 pb-3">
