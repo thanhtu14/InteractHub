@@ -609,7 +609,7 @@ const StoryList: React.FC<StoryListProps> = ({ user }) => {
                             <div className="absolute top-3 left-3 w-10 h-10 rounded-full border-[3px] border-blue-600 p-[2px] bg-bg">
                                 <img src={resolveUrl(group.profilePicture)} className="w-full h-full rounded-full object-cover" alt="avatar" />
                             </div>
-                            <p className="absolute bottom-3 left-3 right-3 text-[var(--color-text)] text-[12px] font-semibold truncate">
+                            <p className="absolute bottom-3 left-3 right-3 text-[var(--color-bg)] font-semibold truncate">
                                 {group.userName}
                             </p>
                         </div>
@@ -619,7 +619,7 @@ const StoryList: React.FC<StoryListProps> = ({ user }) => {
 
             {/* VIEWER */}
             {viewingUserIndex !== null && (
-                <div className="fixed inset-0 z-[1000] bg-[var(--color-hover)] flex items-center justify-center">
+                <div className="fixed inset-0 z-[1000] bg-black/80 flex items-center justify-center">
                     <button onClick={closeViewer} className="absolute top-5 right-5 text-[var(--color-text)]/70 hover:text-[var(--color-hover1)] text-4xl z-[1010]">&times;</button>
                     <button onClick={handlePrev} className="absolute left-4 w-12 h-12 rounded-full bg-[var(--color-hover)] hover:bg-[var(--color-hover1)] text-[var(--color-text)] flex items-center justify-center z-[1010]"><FaChevronLeft /></button>
                     <button onClick={handleNext} className="absolute right-4 w-12 h-12 rounded-full bg-[var(--color-hover)] hover:bg-[var(--color-hover1)] text-[var(--color-text)] flex items-center justify-center z-[1010]"><FaChevronRight /></button>

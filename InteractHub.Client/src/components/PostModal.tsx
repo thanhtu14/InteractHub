@@ -574,7 +574,7 @@ const PostModal: React.FC<PostModalProps> = ({ user, onClose, onPostCreated }) =
   };
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-[var(--color-hover)] backdrop-blur-md p-4 text-[#e4e6eb]">
+    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-md p-4 text-[#e4e6eb]">
       <div className="bg-[var(--color-bg)] w-full max-w-[600px] rounded-2xl shadow-2xl flex flex-col border border-[var(--color-border)] animate-in fade-in zoom-in duration-300">
         
         {/* Header */}
@@ -641,7 +641,7 @@ const PostModal: React.FC<PostModalProps> = ({ user, onClose, onPostCreated }) =
             {/* LỚP TEXTAREA (TRÊN) */}
             <textarea
               ref={textareaRef}
-              placeholder={`${currentUser?.FullName || 'Vinh'} ơi, bạn đang nghĩ gì thế?`}
+              placeholder={`${currentUser?.FullName || 'Bạn'} đang nghĩ gì thế?`}
               value={postContent}
               onChange={handleTextareaChange}
               onKeyDown={handleKeyDown}

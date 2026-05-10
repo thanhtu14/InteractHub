@@ -656,7 +656,7 @@ after:bg-gradient-to-r after:from-transparent after:via-[var(--color-border)] af
             onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleSend(); } }}
             placeholder="Aa"
             rows={1}
-            className="flex-1 bg-[var(--color-hover1)] text-[var(--color-text)] rounded-2xl px-4 py-2 resize-none outline-none max-h-[100px] text-sm"
+            className="flex-1 bg-[var(--color-hover1)] text-[var(--color-black)] rounded-2xl px-4 py-2 resize-none outline-none max-h-[100px] text-sm"
           />
           <button
             onClick={handleSend}
